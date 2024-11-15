@@ -7,6 +7,14 @@
 
 import SwiftUI
 
+struct ContentView: View {
+    var body: some View {
+        NavigationStack {
+            WelcomeView()
+        }
+    }
+}
+
 @main
 struct GetUpApp: App {
     var body: some Scene {
@@ -14,4 +22,9 @@ struct GetUpApp: App {
             ContentView()
         }
     }
+}
+
+
+#Preview {
+    ContentView()
 }
