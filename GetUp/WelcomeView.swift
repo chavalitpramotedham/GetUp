@@ -35,7 +35,7 @@ struct WelcomeView: View {
                     .fontWeight(.regular)
                     .foregroundStyle(.black)
                 
-                NavigationLink(destination: HabitListView()) {
+                NavigationLink(destination: MainPageView()) {
                     Text("Get Started")
                         .font(.title3)
                         .fontWeight(.heavy)

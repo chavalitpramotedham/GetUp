@@ -11,7 +11,11 @@ struct TaskListView: View {
     @Binding var taskList: [TaskObject]
     @ObservedObject var taskManager: TaskManager
     var selectedDate: Date
+
     @State private var selectedTab: Tab = .all
+    @State private var colorFilter: Int = -1
+    @State private var showColorPicker: Bool = false
+    @State private var colorFilterButtonFrame: CGRect = .zero // Frame for positioning popup
     
     @State private var showPopup: Bool = false
     @State private var isEditingTask: Bool = true
@@ -23,18 +27,32 @@ struct TaskListView: View {
     @State private var newTaskSelectedColor: Int = 0
 
     enum Tab {
-        case all, left
+        case all, remaining
     }
     
     private var remainingTaskList: [TaskObject] {
-        taskList.filter { !$0.isDone } // Assuming `isDone = false` means "left"
+        taskList.filter { !$0.isDone } // Assuming `isDone = false` means "remaining"
     }
     
     var body: some View {
         ZStack{
-            VStack(alignment:.center,spacing:10){
-                HStack(alignment: .center, spacing:10){
-                    TabSelector(selectedTab: $selectedTab)
+            VStack(alignment:.center,spacing:5){
+                HStack(alignment: .center, spacing:5){
+                    GeometryReader { geometry in
+                        TabSelector(
+                            selectedTab: $selectedTab,
+                            colorFilter: $colorFilter,
+                            showColorPicker: $showColorPicker,
+                            taskList: taskList,
+                            remainingTaskList: remainingTaskList,
+                            colorFilterButtonFrame: $colorFilterButtonFrame
+                        )
+                        .onAppear {
+                            colorFilterButtonFrame = geometry.frame(in: .local)
+                        }
+                    }
+                    
+                    Spacer()
                     
                     Button (
                         action: {
@@ -48,11 +66,11 @@ struct TaskListView: View {
                                 .font(.system(size: 18))
                                 .fontWeight(.heavy)
                                 .foregroundColor(.white)
-                                .padding(15)
+                                .padding(10)
                                 .background(
                                     RoundedRectangle(cornerRadius: 10)
                                         .fill(Color.black)
-                                        .shadow(color: Color.black.opacity(0.5), radius: 3, x: 0, y: 2)
+                                        .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 1)
                                 )
                         }
                     )
@@ -68,9 +86,9 @@ struct TaskListView: View {
                 .frame(maxWidth:.infinity,maxHeight:.infinity)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 
-                
             }
-            .padding(10)
+            .padding([.leading,.trailing,.bottom],10)
+            .padding(.top,5)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.gray.opacity(0.1))
             .cornerRadius(10)
@@ -80,13 +98,76 @@ struct TaskListView: View {
                     .shadow(color: Color.black.opacity(10), radius: 5, x: 0, y: -1) // Inner shadow effect
                     .clipShape(RoundedRectangle(cornerRadius: 10))
             )
+            .blur(radius: showColorPicker ? 3 : 0)
+            
+            // Dim background while keeping the color filter button in focus
+            if showColorPicker {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .onTapGesture {
+                        withAnimation {
+                            showColorPicker = false
+                        }
+                    }
+                
+                // The color picker popup
+                HStack(spacing: 10) {
+                    HStack(alignment:.center,spacing:0){
+                        ForEach(colorDict.keys.sorted(), id: \.self) { key in
+                            Rectangle()
+                                .fill(colorDict[key] ?? Color.clear)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
+                    }
+                    .frame(maxWidth:36,maxHeight: 36)
+                    .overlay(
+                        Circle()
+                            .stroke(colorFilter == -1 ? Color.black : Color.clear, lineWidth: 2)
+                    )
+                    .clipShape(Circle())
+                    .onTapGesture {
+                        withAnimation {
+                            colorFilter = -1
+                            showColorPicker = false
+                        }
+                    }
+                    
+                    ForEach(colorDict.keys.sorted(), id: \.self) { key in
+                        Circle()
+                            .fill(colorDict[key] ?? Color.clear)
+                            .frame(width: 36, height: 36)
+                            .overlay(
+                                Circle()
+                                    .stroke(colorFilter == key ? Color.black : Color.clear, lineWidth: 2)
+                            )
+                            .onTapGesture {
+                                withAnimation {
+                                    colorFilter = key
+                                    showColorPicker = false
+                                }
+                            }
+                    }
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.white)
+                        .shadow(radius: 10)
+                )
+//                .frame(width: 200) // Adjust width as needed
+                .position(
+                    x: screenWidth/2-15,
+                    y: colorFilterButtonFrame.maxY + 45
+                ) // Position popup directly below the button
+            }
+            
+//            Spacer()
         }
         .blur(radius: showPopup ? 3 : 0)
             
 //        // Popup Overlay
         if showPopup {
-            Color.black.opacity(0.4)
-                .ignoresSafeArea() // Dimmed background
             
             NewTaskPopupView(showPopup: $showPopup,
                                              newTaskName: $newTaskName,
@@ -132,7 +213,6 @@ struct TaskListView: View {
                 resetPopupFields()
             }
             .frame(maxWidth:.infinity, maxHeight:.infinity)
-            
         }
     }
     
@@ -160,12 +240,13 @@ struct TaskListView: View {
     // Conditionally render task list based on selected tab
     private var taskListForSelectedTab: some View {
         Group {
+            let filteredList = colorFilter == -1 ? taskList : taskList.filter { $0.colorIndex == colorFilter }
             if selectedTab == .all {
-                ForEach(taskList) { task in
+                ForEach(filteredList) { task in
                     TaskCardView(taskObject: task, onEdit: { onEdit(task) })
                 }
             } else {
-                ForEach(remainingTaskList) { task in
+                ForEach(filteredList.filter { !$0.isDone }) { task in
                     TaskCardView(taskObject: task, onEdit: { onEdit(task) })
                 }
             }
@@ -192,38 +273,101 @@ struct TaskListView: View {
 
 struct TabSelector: View {
     @Binding var selectedTab: TaskListView.Tab
+    @Binding var colorFilter: Int
+    @Binding var showColorPicker: Bool
+    var taskList: [TaskObject]
+    var remainingTaskList: [TaskObject]
+    @Binding var colorFilterButtonFrame: CGRect
     
     var body: some View {
         HStack(alignment: .center){
-            Text("All")
-                .frame(maxWidth: .infinity, maxHeight:.infinity)
-                .font(.system(size: 16))
-                .fontWeight(selectedTab == .all ? .heavy : .semibold)
-                .background(selectedTab == .all ? Color.green : Color.clear)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-                .onTapGesture {
-                    selectedTab = .all
+            HStack(alignment:.center,spacing:10){
+                Text("All")
+                    .font(.system(size: 16))
+                    .fontWeight(selectedTab == .all ? .heavy : .semibold)
+                
+                Text("\(taskList.count)")
+                    .font(.system(size: 16))
+                    .fontWeight(selectedTab == .all ? .bold : .regular)
+            }
+            .padding(.horizontal,15)
+            .padding(.vertical,10)
+            .foregroundColor(selectedTab == .all ? Color.white : Color.black)
+            .background{
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(selectedTab == .all ? Color.black : Color.white)
+                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+            }
+            .onTapGesture {
+                selectedTab = .all
+            }
+            
+            HStack(alignment:.center,spacing:10){
+                Text("Left")
+                    .font(.system(size: 16))
+                    .fontWeight(selectedTab == .remaining ? .heavy : .semibold)
+                
+                Text("\(remainingTaskList.count)")
+                    .font(.system(size: 16))
+                    .fontWeight(selectedTab == .remaining ? .bold : .regular)
+            }
+            .padding(.horizontal,15)
+            .padding(.vertical,10)
+            .foregroundColor(selectedTab == .remaining ? Color.white : Color.black)
+            .background{
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(selectedTab == .remaining ? Color.black : Color.white)
+                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+            }
+            .onTapGesture {
+                selectedTab = .remaining
+            }
+                
+            HStack(alignment:.center,spacing:10){
+                HStack(alignment:.center,spacing:0){
+                    Group {
+                        switch colorFilter {
+                        case -1:
+                            ForEach(colorDict.keys.sorted(), id: \.self) { key in
+                                Rectangle()
+                                    .fill(colorDict[key] ?? Color.clear)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            }
+                        default:
+                            Circle()
+                                .fill(colorDict[colorFilter] ?? Color.clear)
+                        }
+                    }
                 }
-            Text("Remaining")
-                .frame(maxWidth: .infinity, maxHeight:.infinity)
-                .font(.system(size: 16))
-                .fontWeight(selectedTab == .left ? .heavy : .semibold)
-                .background(selectedTab == .left ? Color.orange : Color.clear)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-                .onTapGesture {
-                    selectedTab = .left
+                .frame(maxWidth:20,maxHeight: 20)
+                .overlay(
+                    Circle()
+                        .stroke(Color.black, lineWidth: 1) // Optional border
+                )
+                .clipShape(Circle())
+                
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 16))
+                    .fontWeight(colorFilter == -1 ? .semibold : .heavy)
+            }
+            .padding(.horizontal,15)
+            .padding(.vertical,10)
+            .foregroundColor(colorFilter == -1 ? Color.black : Color.white)
+            .background{
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(colorFilter == -1 ? Color.white : Color.black)
+                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+            }
+            .onTapGesture {
+                withAnimation {
+                    showColorPicker.toggle()
                 }
+            }
+            
+            Spacer()
         }
-        .padding(5)
         .frame(maxWidth:.infinity, maxHeight:.infinity)
-        .background{
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.black)
-                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                .shadow(color: Color.black.opacity(0.5), radius: 3, x: 0, y: 2) // Inner shadow effect
-        }
+        .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 1)
     }
 }
 
@@ -241,3 +385,4 @@ struct AddTaskButton: View {
             )
     }
 }
+

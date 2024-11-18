@@ -30,7 +30,7 @@ struct CalendarDayView: View {
         let printPercentageCompleted: Int = Int(percentageCompleted*100)
         let numTasksLeft: Int = totalTasks - completedTasks
         
-        let displayColor: Color = percentageCompleted < 0.3 ? Color.red : percentageCompleted < 0.6 ? Color.orange : percentageCompleted < 0.9 ? Color.yellow : Color.green
+        let displayColor: Color = getDisplayColorByCompletion(for: percentageCompleted)
         
         if isPast || isFuture {
             if isPast{

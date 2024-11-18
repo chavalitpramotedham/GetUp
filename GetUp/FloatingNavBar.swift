@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct FloatingNavBar: View {
-    @State private var selectedTab = 0
+    @Binding var selectedTab: Int
     
     var body: some View {
         VStack{
@@ -35,7 +35,7 @@ struct FloatingNavBar: View {
                 Spacer()
                 
                 TabBarButton(image: "person.fill", isSelected: selectedTab == 4) {
-                    selectedTab = 4
+                    selectedTab = 3
                 }
             }
             .padding(.horizontal, 70)
@@ -73,8 +73,4 @@ struct TabBarButton: View {
             }
         }
     }
-}
-
-#Preview {
-    FloatingNavBar()
 }

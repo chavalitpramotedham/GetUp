@@ -81,39 +81,49 @@ struct NewTaskPopupView: View {
                             .fontWeight(.regular)
                     }
                     
-                    HStack(spacing: 15) {
-                        ForEach(0..<colorDict.count, id: \.self) { index in
-                            RoundedRectangle(cornerRadius: 5)
-                                .fill(colorDict[index] ?? Color.clear)
-                                .opacity(selectedColor == index ? 1 : 0.6)
-                                .frame(maxWidth:.infinity,maxHeight:.infinity)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 5)
-                                        .stroke(selectedColor == index ? Color.black : Color.clear, lineWidth: 1.5)
-                                )
-                                .onTapGesture {
-                                    selectedColor = index
-                                    print(isEditing)
+                    HStack(alignment: .center,spacing:20){
+                        HStack(spacing: 10) {
+                            Image(systemName: "timer")
+                                .font(.system(size: 16))
+                            
+                            Button(selectedTime != nil ? formattedTime() : "--:--") {
+                                withAnimation {
+                                    showTimePicker = true
                                 }
+                            }
+                            .foregroundStyle(.black)
+                            .font(.system(size: 16))
+                            .fontWeight(.semibold)
                         }
-                    }
-                    .frame(height:20)
-                    
-                    HStack(alignment: .center,spacing: 10){
-                        Image(systemName: "timer")
-                            .font(.system(size: 18))
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 100)
+                                .fill(Color.gray.opacity(0.1))
+                        )
                         
-                        Button(selectedTime != nil ? formattedTime() : "Set Timer") {
-                            withAnimation {
-                                showTimePicker = true
+                        HStack(spacing: 10) {
+                            ForEach(0..<colorDict.count, id: \.self) { index in
+                                Circle()
+                                    .fill(colorDict[index] ?? Color.clear)
+                                    .opacity(selectedColor == index ? 1 : 0.6)
+                                    .frame(width:20,height:20)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(selectedColor == index ? Color.black : Color.clear, lineWidth: 1.5)
+                                    )
+                                    .onTapGesture {
+                                        withAnimation {
+                                            selectedColor = index
+                                        }
+                                    }
                             }
                         }
-                        .foregroundStyle(.black)
-                        .font(.system(size: 18))
-                        .fontWeight(.semibold)
-                        
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 100)
+                                .fill(Color.gray.opacity(0.1))
+                        )
                     }
-                    .frame(width:150,height: 40)
                     
                 }
                 

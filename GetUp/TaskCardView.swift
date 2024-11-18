@@ -43,6 +43,7 @@ struct TaskCardView: View {
                     Text(taskName)
                         .font(.system(size: 18))
                         .fontWeight(.bold)
+                        .lineLimit(2)
                     
                     Button (
                         action: {
