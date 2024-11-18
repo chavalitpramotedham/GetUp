@@ -22,7 +22,7 @@ struct CalendarDayView: View {
     
     var circleSize: CGFloat = 30
     var startAngle: CGFloat = 0
-    var rotation: Angle = .degrees(270)
+    var rotation: Double = -85
     
     var body: some View{
         
@@ -45,14 +45,8 @@ struct CalendarDayView: View {
                             Circle()
                                 .trim(from: 0, to: percentageCompleted) // Show progress
                                 .stroke(displayColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
-                                .rotationEffect(.degrees(-90)) // Rotate to start from top
+                                .rotationEffect(.degrees(rotation)) // Rotate to start from top
                                 .frame(width: circleSize, height: circleSize)           // Circle size
-                            
-//                            Circle()
-//                                .trim(from: 0, to: progress) // Show progress
-//                                .stroke(color, style: StrokeStyle(lineWidth: circleThickness, lineCap: .round))
-//                                .rotationEffect(.degrees(-90)) // Rotate to start from top
-//                                .frame(width: calculateSize(index), height: calculateSize(index))
                         }
                         .padding(10)
                         
@@ -103,7 +97,7 @@ struct CalendarDayView: View {
                         Circle()
                             .trim(from: 0, to: percentageCompleted) // Show progress
                             .stroke(displayColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
-                            .rotationEffect(.degrees(-90)) // Rotate to start from top
+                            .rotationEffect(.degrees(rotation)) // Rotate to start from top
                             .frame(width: circleSize, height: circleSize)
                     }
                     .padding(10)
@@ -142,7 +136,7 @@ struct CalendarDayView: View {
                         Circle()
                             .trim(from: 0, to: percentageCompleted) // Show progress
                             .stroke(displayColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
-                            .rotationEffect(.degrees(-90)) // Rotate to start from top
+                            .rotationEffect(.degrees(rotation)) // Rotate to start from top
                             .frame(width: circleSize, height: circleSize)
                     }
                     .padding(10)

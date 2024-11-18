@@ -27,6 +27,7 @@ struct CalendarSummary: View {
             }
             .padding(.horizontal,-10)
         }
+        .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 0)
     }
     
     
@@ -69,7 +70,6 @@ struct CalendarSummary: View {
                     }
                 }
             }
-                .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
         )
     }
 }

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Foundation
 
 struct TaskCardView: View {
 //    @Binding var taskObject: TaskObject
@@ -27,7 +28,12 @@ struct TaskCardView: View {
         let taskDescription: String = taskObject.description
         let taskColorIndex: Int = taskObject.colorIndex
         let taskIndex: Int = taskObject.index
-        let timer: String = taskObject.timer
+        let timer: Date? = taskObject.timer ?? nil
+        let participantsID = taskObject.participantsID
+        
+        var otherParticipantList: [String] {
+            getOtherUIDs(from: participantsID).map { getOtherUsername(from: $0) }
+        }
         
         HStack (alignment: .center,spacing: 20){
             VStack(alignment: .leading,spacing:10){
@@ -60,7 +66,7 @@ struct TaskCardView: View {
                     )
                 }
                 
-                VStack(alignment:.leading, spacing:5){
+                VStack(alignment:.leading, spacing:10){
                     Text(taskDescription == "" ? "No description":taskDescription)
                         .font(.system(size: 14))
                         .fontWeight(.regular)
@@ -77,12 +83,43 @@ struct TaskCardView: View {
                     }
                 }
                 
-                HStack(alignment: .center,spacing: 10){
-                    Image(systemName: "timer")
-                        .font(.system(size: 18))
-                    Text(timer)
-                        .font(.system(size: 16))
-                        .fontWeight(.semibold)
+                HStack(alignment: .center,spacing: 20){
+                    HStack(alignment: .center,spacing:10){
+                        Image(systemName: "timer")
+                            .font(.system(size: 16))
+                            .foregroundStyle(.black.opacity(0.75))
+                        Text(formatDateTo24HourTime(date:timer))
+                            .font(.system(size: 16))
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.black.opacity(0.75))
+                    }
+                    HStack{
+                        Image(systemName: "person.2.fill")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.black.opacity(0.75))
+                        
+                        if otherParticipantList.count >= 1 {
+                            
+                            if otherParticipantList.count >= 2 {
+                                Text("\(otherParticipantList[0]) +\(otherParticipantList.count - 1)")
+                                    .font(.system(size: 16))
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.black.opacity(0.75))
+                            } else{
+                                Text("\(otherParticipantList[0])")
+                                    .font(.system(size: 16))
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.black.opacity(0.75))
+                            }
+                            
+                        } else{
+                            Text("-")
+                                .font(.system(size: 16))
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.black.opacity(0.75))
+                        }
+                        
+                    }
                 }
                 .frame(width: .infinity, height: 30)
             }

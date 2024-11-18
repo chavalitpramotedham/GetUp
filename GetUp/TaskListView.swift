@@ -25,6 +25,7 @@ struct TaskListView: View {
     @State private var newTaskDescription: String = ""
     @State private var newTaskTimer: Date? = nil
     @State private var newTaskSelectedColor: Int = 0
+    @State private var newTaskParticipantsID: [String] = [uid]
 
     enum TaskListTab {
         case all, remaining
@@ -174,6 +175,7 @@ struct TaskListView: View {
                                              newTaskDescription: $newTaskDescription,
                                              selectedTime: $newTaskTimer,
                              selectedColor: $newTaskSelectedColor,
+                             participantsID: $newTaskParticipantsID,
                              isEditing: isEditingTask
             ){
                 // onSave closure to add the new task
@@ -182,8 +184,9 @@ struct TaskListView: View {
                         // Update existing task
                         editingTask.name = newTaskName
                         editingTask.description = newTaskDescription
-                        editingTask.timer = DateTimeToString(from: newTaskTimer)
+                        editingTask.timer = newTaskTimer ?? nil
                         editingTask.colorIndex = newTaskSelectedColor
+                        editingTask.participantsID = newTaskParticipantsID
                     } else {
                         // Add a new task
                         let newTask = TaskObject(
@@ -192,7 +195,8 @@ struct TaskListView: View {
                             description: newTaskDescription,
                             colorIndex: newTaskSelectedColor,
                             isDone: false,
-                            timer: DateTimeToString(from: newTaskTimer)
+                            timer: newTaskTimer ?? nil,
+                            participantsID: newTaskParticipantsID
                         )
                         taskList.append(newTask)
                     }
@@ -221,6 +225,7 @@ struct TaskListView: View {
         newTaskDescription = ""
         newTaskTimer = nil
         newTaskSelectedColor = 0
+        newTaskParticipantsID = [uid]
         editingTask = nil
         isEditingTask = false
     }
@@ -229,8 +234,9 @@ struct TaskListView: View {
     private func onEdit(_ task: TaskObject) {
         newTaskName = task.name
         newTaskDescription = task.description
-        newTaskTimer = dateFromString(task.timer)
+        newTaskTimer = task.timer
         newTaskSelectedColor = task.colorIndex
+        newTaskParticipantsID = task.participantsID
         editingTask = task
         isEditingTask = true
         showPopup = true

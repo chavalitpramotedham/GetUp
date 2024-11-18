@@ -29,7 +29,20 @@ let nameDict: [Int: String] = [
     4: "SOCIAL"
 ]
 
+// To be stored in DB
+
 let userName = "Chava"
+let uid = "123"
+
+let userName2 = "Cheryl"
+let uid2 = "456"
+
+let userDict: [String:String] = [
+    uid: userName,
+    uid2: userName2
+]
+
+//
 
 let startingScreenIndex = 0
 
@@ -79,15 +92,19 @@ class TaskObject: ObservableObject, Identifiable, Equatable{
             objectWillChange.send() // Notify listeners
         }
     }
-    @Published var timer: String
+    @Published var timer: Date?
+    @Published var creatorID: String
+    @Published var participantsID: [String]
 
-    init(index: Int = -1, name: String = "Task", description: String = "Description", colorIndex: Int = 0,isDone: Bool = false, timer: String = "00:00") {
+    init(index: Int = -1, name: String = "Task", description: String = "Description", colorIndex: Int = 0,isDone: Bool = false, timer: Date? = Date(), creatorID: String = uid, participantsID: [String] = [uid]) {
         self.index = index
         self.name = name
         self.description = description
         self.colorIndex = colorIndex
         self.isDone = isDone
-        self.timer = timer
+        self.timer = timer ?? nil
+        self.creatorID = creatorID
+        self.participantsID = participantsID
     }
     
     static func == (lhs: TaskObject, rhs: TaskObject) -> Bool {
@@ -97,7 +114,9 @@ class TaskObject: ObservableObject, Identifiable, Equatable{
         lhs.description == rhs.description &&
         lhs.colorIndex == rhs.colorIndex &&
         lhs.isDone == rhs.isDone &&
-        lhs.timer == rhs.timer
+        lhs.timer == rhs.timer &&
+        lhs.creatorID == rhs.creatorID &&
+        lhs.participantsID == rhs.participantsID
     }
 }
 
@@ -218,12 +237,40 @@ func getTaskListByDate(_ date: Date) -> [TaskObject] {
             description: "long text long text long text long text long text long text long text long text long text long text long text long text",
             colorIndex: Int.random(in:0...(colorDict.count-1)),
             isDone: date > Calendar.current.startOfDay(for: Date()) ? false : Bool.random(),
-            timer: "08:30"
+            timer: randomTimeOnDate(date),
+            creatorID: uid,
+            participantsID: Int.random(in:0...1) > 0 ? [uid,uid2] : [uid]
         )
         taskList.append(task)
     }
     
     return taskList
+}
+
+func randomTimeOnDate(_ date: Date) -> Date {
+    let calendar = Calendar.current
+    
+    // Get the start of the day (midnight) for the given date
+    let startOfDay = calendar.startOfDay(for: date)
+    
+    // Calculate the range of seconds in the day (24 hours)
+    let secondsInDay = 24 * 60 * 60
+    let randomSeconds = Int.random(in: 0..<secondsInDay)
+    
+    // Add the random seconds to the start of the day
+    return calendar.date(byAdding: .second, value: randomSeconds, to: startOfDay) ?? startOfDay
+}
+
+func formatDateTo24HourTime(date: Date?) -> String {
+    if let validatedDate = date{
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm" // 24-hour format
+        formatter.timeZone = TimeZone.current // Optional: Ensures it's in the local time zone
+        return formatter.string(from: validatedDate)
+    }
+    else{
+        return "-"
+    }
 }
 
 func getDisplayColorByCompletion(for percentageCompleted: CGFloat) -> Color {
@@ -236,6 +283,14 @@ func getDisplayColorByCompletion(for percentageCompleted: CGFloat) -> Color {
     } else {
         return Color.green
     }
+}
+
+func getOtherUIDs(from array: [String]) -> [String] {
+    return array.filter { !$0.contains(uid) }
+}
+
+func getOtherUsername(from uid: String) -> String{
+    return userDict[uid] ?? ""
 }
 
 #Preview{

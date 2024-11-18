@@ -15,19 +15,31 @@ struct NewTaskPopupView: View {
     @Binding var newTaskDescription: String
     @Binding var selectedTime: Date?
     @Binding var selectedColor: Int
+    @Binding var participantsID: [String]
     
     var isEditing: Bool
     
     @State private var showTimePicker = false
+    @State private var showParticipantPicker = false
     
     var onSave: (() -> Void)?
     var onCancel: (() -> Void)?
     var onDelete: (() -> Void)?
     
     var body: some View {
+        
+        var otherParticipantList: [String] {
+            getOtherUIDs(from: participantsID).map { getOtherUsername(from: $0) }
+        }
+        
+        let _ = print(otherParticipantList)
+        
         VStack(alignment:.center, spacing: 20) {
             if showTimePicker {
             // Time Picker View
+                Text("Select Time")
+                    .font(.title3)
+                    .fontWeight(.bold)
                 
                 DatePicker(
                     "Select Time",
@@ -81,50 +93,123 @@ struct NewTaskPopupView: View {
                             .fontWeight(.regular)
                     }
                     
-                    HStack(alignment: .center,spacing:20){
-                        HStack(spacing: 10) {
-                            Image(systemName: "timer")
-                                .font(.system(size: 16))
-                            
-                            Button(selectedTime != nil ? formattedTime() : "--:--") {
-                                withAnimation {
-                                    showTimePicker = true
+                    HStack(alignment: .center,spacing:10){
+                        
+                        VStack (spacing:15){
+                            HStack(spacing: 15) {
+                                ForEach(0..<3, id: \.self) { index in
+                                    Circle()
+                                        .fill(colorDict[index] ?? Color.clear)
+                                        .opacity(selectedColor == index ? 1 : 0.6)
+                                        .frame(width:30,height:30)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(selectedColor == index ? Color.black : Color.clear, lineWidth: 1.5)
+                                        )
+                                        .onTapGesture {
+                                            withAnimation {
+                                                selectedColor = index
+                                            }
+                                        }
                                 }
                             }
-                            .foregroundStyle(.black)
-                            .font(.system(size: 16))
-                            .fontWeight(.semibold)
+                            HStack(spacing: 15) {
+                                ForEach(3..<colorDict.count, id: \.self) { index in
+                                    Circle()
+                                        .fill(colorDict[index] ?? Color.clear)
+                                        .opacity(selectedColor == index ? 1 : 0.6)
+                                        .frame(width:30,height:30)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(selectedColor == index ? Color.black : Color.clear, lineWidth: 1.5)
+                                        )
+                                        .onTapGesture {
+                                            withAnimation {
+                                                selectedColor = index
+                                            }
+                                        }
+                                }
+                            }
                         }
-                        .padding()
+                        .padding(20)
                         .background(
-                            RoundedRectangle(cornerRadius: 100)
+                            RoundedRectangle(cornerRadius: 20)
                                 .fill(Color.gray.opacity(0.1))
                         )
                         
-                        HStack(spacing: 10) {
-                            ForEach(0..<colorDict.count, id: \.self) { index in
-                                Circle()
-                                    .fill(colorDict[index] ?? Color.clear)
-                                    .opacity(selectedColor == index ? 1 : 0.6)
-                                    .frame(width:20,height:20)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(selectedColor == index ? Color.black : Color.clear, lineWidth: 1.5)
-                                    )
-                                    .onTapGesture {
-                                        withAnimation {
-                                            selectedColor = index
-                                        }
+                        VStack(alignment:.leading,spacing:10){
+                            HStack(spacing: 10) {
+                                Image(systemName: "timer")
+                                    .font(.system(size: 16))
+                                    .foregroundStyle(selectedTime != nil ? Color.white : Color.black)
+                                
+                                Button(selectedTime != nil ? formatDateTo24HourTime(date:selectedTime) : "--:--") {
+                                    withAnimation {
+                                        showTimePicker = true
                                     }
+                                }
+                                .foregroundStyle(selectedTime != nil ? Color.white : Color.black)
+                                .font(.system(size: 16))
+                                .fontWeight(.semibold)
+                                
+                                if selectedTime != nil {
+                                    Button (
+                                        action: {
+                                            withAnimation{
+                                                selectedTime = nil
+                                            }
+                                        },
+                                        label:{
+                                            Image(systemName: "xmark")
+                                                .font(.system(size: 14))
+                                                .foregroundStyle(selectedTime != nil ? Color.white : Color.black)
+                                        }
+                                    )
+                                }
                             }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(selectedTime != nil ? Color.orange : Color.gray.opacity(0.1))
+                            )
+                            
+                            HStack(spacing: 10) {
+                                Image(systemName: "person.2.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundStyle(otherParticipantList.count >= 1 ? Color.white : Color.black)
+                                
+                                Button(otherParticipantList.count >= 1 ? (otherParticipantList.count >= 2 ? "\(otherParticipantList.count) others" : "\(otherParticipantList[0])") : "Sync") {
+                                    withAnimation {
+                                        participantsID = [uid,uid2]
+                                    }
+                                }
+                                .foregroundStyle(otherParticipantList.count >= 1 ? Color.white : Color.black)
+                                .font(.system(size: 16))
+                                .fontWeight(.semibold)
+                                
+                                if otherParticipantList.count >= 1 {
+                                    Button (
+                                        action: {
+                                            withAnimation{
+                                                participantsID = [uid]
+                                            }
+                                        },
+                                        label:{
+                                            Image(systemName: "xmark")
+                                                .font(.system(size: 14))
+                                                .foregroundStyle(otherParticipantList.count >= 1 ? Color.white : Color.black)
+                                                
+                                        }
+                                    )
+                                }
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(otherParticipantList.count >= 1 ? Color.blue : Color.gray.opacity(0.1))
+                            )
                         }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 100)
-                                .fill(Color.gray.opacity(0.1))
-                        )
                     }
-                    
                 }
                 
 //                Spacer()
@@ -197,13 +282,5 @@ struct NewTaskPopupView: View {
         .cornerRadius(20)
         .shadow(radius: 20)
         .transition(.scale) // Popup scale animation
-    }
-    
-    // Function to format the selected time as a string
-    private func formattedTime() -> String {
-        guard let time = selectedTime else { return "" }
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter.string(from: time)
     }
 }
