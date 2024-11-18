@@ -8,108 +8,180 @@ import SwiftUI
 
 struct CalendarSummary: View {
     @ObservedObject var taskManager: TaskManager
+    var summaryDates: [Date] = []
+    
+    var totalTaskList: [TaskObject] = []
     
     var body: some View {
-        VStack(alignment:.leading,spacing: 40) {
+        
+        VStack(alignment:.center,spacing: 20) {
             // Overall Completion Chart
-            Text("Task Summary")
-                .font(.title3)
-                .fontWeight(.bold)
             
             overallCompletionChart()
+                .padding(.horizontal,20)
+                
             
-            // Category-based Completion Charts
-            ForEach(uniqueCategories(), id: \.self) { colorIndex in
-                categoryCompletionChart(for: colorIndex)
+            HStack(spacing:0){
+                ConcentricCircleView(taskList: totalTaskList)
+                CategoryCompletionChart(taskList: totalTaskList)
             }
+            .padding(.horizontal,-10)
         }
-        .padding()
     }
+    
+    
     
     // MARK: - Overall Completion Chart
     private func overallCompletionChart() -> some View {
-        if let taskListsByDate = taskManager.taskListsByDate {
-            let allTasks = taskListsByDate.values.flatMap { $0 }
-            let completedTasks = allTasks.filter { $0.isDone }.count
-            let totalTasks = allTasks.count
-            let completionPercentage = totalTasks > 0 ? CGFloat(completedTasks) / CGFloat(totalTasks) : 0
-            
-            return AnyView(
-                VStack {
-                    ProgressView(value: completionPercentage)
-                        .progressViewStyle(LinearProgressViewStyle(tint: .blue))
-                        .scaleEffect(x: 1, y: 10, anchor: .center)
-                        .overlay(
-                            HStack{
-                                Text("\(Int(completionPercentage * 100))% completed")
-                                    .font(.system(size: 18))
-                                    .foregroundColor(.white)
-                                    .fontWeight(.semibold)
-                                
-                                Text("\(Int(completionPercentage * 100))% completed")
-                                    .font(.system(size: 18))
-                                    .foregroundColor(.white)
-                                    .fontWeight(.semibold)
-                                
-                            }
-                            
-                        )
-                }
-            )
-        } else {
-            return AnyView(
-                VStack {
-                    Text("Overall Completion")
-                        .font(.headline)
-                }
-            )
-        }
-    }
-    
-    // MARK: - Category-based Completion Chart
-    private func categoryCompletionChart(for colorIndex: Int) -> some View {
-        if let taskListsByDate = taskManager.taskListsByDate {
-            let tasksInCategory = taskListsByDate.values.flatMap { $0 }.filter { $0.colorIndex == colorIndex }
-            let completedTasks = tasksInCategory.filter { $0.isDone }.count
-            let totalTasks = tasksInCategory.count
-            let completionPercentage = totalTasks > 0 ? CGFloat(completedTasks) / CGFloat(totalTasks) : 0
-            
-            return AnyView(
-                HStack {
-                    Circle()
-                        .fill(colorDict[colorIndex] ?? Color.gray)
-                        .frame(width: 24, height: 24)
-                    VStack(alignment: .leading) {
-                        Text("Category \(colorIndex)")
-                            .font(.headline)
+        let completedTasks = totalTaskList.filter { $0.isDone }.count
+        let totalTasks = totalTaskList.count
+        let completionPercentage = totalTasks > 0 ? CGFloat(completedTasks) / CGFloat(totalTasks) : 0
+        
+        let displayColor: Color = getDisplayColorByCompletion(for: completionPercentage)
+        
+        return AnyView(
+            HStack (spacing:20){
+                if totalTasks == 0{
+                    Text("No Tasks Yet")
+                        .font(.system(size: 30))
+                        .foregroundColor(.black)
+                        .fontWeight(.bold)
+                }else{
+                    Text("\(Int(completionPercentage * 100))%")
+                        .font(.system(size: 30))
+                        .foregroundColor(displayColor)
+                        .fontWeight(.heavy)
+                        .frame(width:90, alignment:.trailing)
+                    
+                    VStack {
                         ProgressView(value: completionPercentage)
-                            .progressViewStyle(LinearProgressViewStyle(tint: colorDict[colorIndex] ?? Color.gray))
-                        Text("\(Int(completionPercentage * 100))% completed")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
+                            .progressViewStyle(LinearProgressViewStyle(tint: displayColor))
+                            .scaleEffect(x: 1, y: 9, anchor: .center)
+                            .overlay(
+                                HStack{
+                                    Text("\(completedTasks)/\(totalTasks) done")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.white)
+                                        .fontWeight(.bold)
+                                }
+                                
+                            )
                     }
                 }
-            )
-        } else {
-            return AnyView(
-                HStack {
+            }
+                .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+        )
+    }
+}
+
+struct ConcentricCircleView: View {
+    var taskList: [TaskObject]
+//    @ObservedObject var taskManager: TaskManager // Assumes taskManager manages task data
+    let circleThickness: CGFloat = 10           // Adjust circle thickness
+
+    var body: some View {
+        ZStack {
+            // Dynamically generate circles based on colorIndex categories
+            ForEach(taskCategories(taskList).indices, id: \.self) { index in
+                let category = taskCategories(taskList)[index]
+                let completedTasks = category.completedTasks
+                let totalTasks = category.totalTasks
+                let progress = category.progress
+                let color = category.color
+                
+                ZStack{
                     Circle()
-                        .fill(colorDict[colorIndex] ?? Color.gray)
-                        .frame(width: 24, height: 24)
-                    Text("No tasks")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
+                        .stroke(totalTasks > 0 ? color.opacity(0.4) : color.opacity(0.05), style: StrokeStyle(lineWidth: circleThickness, lineCap: .round))
+                        .rotationEffect(.degrees(-90)) // Rotate to start from top
+                        .frame(width: calculateSize(index), height: calculateSize(index))
+                    
+                    Circle()
+                        .trim(from: 0, to: progress) // Show progress
+                        .stroke(color, style: StrokeStyle(lineWidth: circleThickness, lineCap: .round))
+                        .rotationEffect(.degrees(-90)) // Rotate to start from top
+                        .frame(width: calculateSize(index), height: calculateSize(index))
                 }
-            )
+            }
         }
+//        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+
+    // MARK: - Helper Methods
+
+    /// Calculate the size of each circle based on its index
+    private func calculateSize(_ index: Int) -> CGFloat {
+        let baseSize: CGFloat = 160 // Base size for the outermost circle
+        let spacing: CGFloat = 15  // Space between circles
+        return baseSize - CGFloat(index) * (circleThickness + spacing)
+    }
+}
+
+struct CategoryCompletionChart: View {
+    var taskList: [TaskObject]
+
+    var body: some View {
+        VStack(alignment:.leading,spacing:5){
+            ForEach(taskCategories(taskList).indices, id: \.self) { index in
+                let category = taskCategories(taskList)[index]
+                let name = category.name
+                let completedTasks = category.completedTasks
+                let totalTasks = category.totalTasks
+                let progress = category.progress
+                let color = category.color
+                
+                
+                HStack (spacing:8){
+                    Circle()
+                        .fill(color)
+                        .frame(width: 20, height: 20)
+                    VStack(alignment: .leading, spacing:0) {
+                        HStack{
+                            Text(name)
+                                .font(.system(size: 14))
+                                .fontWeight(.bold)
+                                .foregroundStyle(color)
+                        }
+                        HStack (spacing:0){
+                            Text(totalTasks > 0 ? "\(completedTasks)/\(totalTasks) done" : "-")
+                                .font(.system(size: 12))
+                                .fontWeight(.regular)
+                                .foregroundStyle(totalTasks > 0 ? Color.black : Color.gray)
+                            
+                        }
+                    }
+                }
+            }
+        }
+//        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+}
+
+
+
+/// Calculate task categories and their progress
+func taskCategories(_ taskList: [TaskObject]) -> [(name: String, color: Color, progress: CGFloat, totalTasks: Int, completedTasks: Int)] {
+    
+    let allTasks = taskList.flatMap { $0 }
+    
+    var categories: [(name: String, color: Color, progress: CGFloat, totalTasks: Int, completedTasks: Int)] = []
+    
+    for (index, color) in colorDict.sorted(by: { $0.key < $1.key }) {
+        let name = nameDict[index] ?? ""
+        let tasksInCategory = allTasks.filter { $0.colorIndex == index }
+        let totalTasks = tasksInCategory.count
+        let completedTasks = tasksInCategory.filter { $0.isDone }.count
+        let progress: CGFloat = totalTasks > 0 ? CGFloat(completedTasks) / CGFloat(totalTasks) : 0
+        
+//        if(totalTasks > 0){
+//            categories.append((name: name, color: color, progress: progress, totalTasks: totalTasks, completedTasks: completedTasks))
+//        }
+        
+        categories.append((name: name, color: color, progress: progress, totalTasks: totalTasks, completedTasks: completedTasks))
     }
     
-    // MARK: - Helper to Get Unique Categories
-    private func uniqueCategories() -> [Int] {
-        let allTasks = taskManager.taskListsByDate?.values.flatMap { $0 } ?? []
-        let categories = allTasks.map { $0.colorIndex }
-        return Array(Set(categories))
-    }
+    return categories
 }
 
 #Preview {

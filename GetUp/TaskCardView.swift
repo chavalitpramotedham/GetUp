@@ -98,6 +98,7 @@ struct TaskCardView: View {
             .onTapGesture {
                 taskObject.isDone.toggle() // Directly toggle taskObject's isDone
                 isDone = taskObject.isDone
+                triggerHapticFeedback()
             }
         }
         .padding()

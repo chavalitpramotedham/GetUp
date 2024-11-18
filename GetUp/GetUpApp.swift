@@ -24,6 +24,12 @@ struct GetUpApp: App {
     }
 }
 
+func triggerHapticFeedback() {
+    let impactFeedbackGenerator = UIImpactFeedbackGenerator(style: .medium)
+    impactFeedbackGenerator.prepare()
+    impactFeedbackGenerator.impactOccurred()
+}
+
 
 #Preview {
     ContentView()

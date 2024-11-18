@@ -17,24 +17,28 @@ struct FloatingNavBar: View {
             // Tab Bar
             HStack {
                 TabBarButton(image: "checklist", isSelected: selectedTab == 0) {
+                    triggerHapticFeedback()
                     selectedTab = 0
                 }
                 
                 Spacer()
                 
                 TabBarButton(image: "calendar", isSelected: selectedTab == 1) {
+                    triggerHapticFeedback()
                     selectedTab = 1
                 }
                 
                 Spacer()
                 
                 TabBarButton(image: "person.2.fill", isSelected: selectedTab == 2) {
+                    triggerHapticFeedback()
                     selectedTab = 2
                 }
                 
                 Spacer()
                 
                 TabBarButton(image: "person.fill", isSelected: selectedTab == 4) {
+                    triggerHapticFeedback()
                     selectedTab = 3
                 }
             }

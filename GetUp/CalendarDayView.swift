@@ -40,14 +40,19 @@ struct CalendarDayView: View {
                         ZStack{
                             Circle()
                                 .stroke(Color.gray.opacity(0.6), lineWidth: 8)
-                            
                                 .frame(width: circleSize, height: circleSize)
                             
                             Circle()
-                                .trim(from: startAngle, to: percentageCompleted)   // Defines the portion of the circle to show
-                                .stroke(displayColor, lineWidth: 8)        // Stroke with width
-                                .rotationEffect(rotation)                 // Rotate the arc to start at a specific angle
+                                .trim(from: 0, to: percentageCompleted) // Show progress
+                                .stroke(displayColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                                .rotationEffect(.degrees(-90)) // Rotate to start from top
                                 .frame(width: circleSize, height: circleSize)           // Circle size
+                            
+//                            Circle()
+//                                .trim(from: 0, to: progress) // Show progress
+//                                .stroke(color, style: StrokeStyle(lineWidth: circleThickness, lineCap: .round))
+//                                .rotationEffect(.degrees(-90)) // Rotate to start from top
+//                                .frame(width: calculateSize(index), height: calculateSize(index))
                         }
                         .padding(10)
                         
@@ -96,10 +101,10 @@ struct CalendarDayView: View {
                             .frame(width: circleSize, height: circleSize)
                         
                         Circle()
-                            .trim(from: startAngle, to: percentageCompleted)   // Defines the portion of the circle to show
-                            .stroke(displayColor, lineWidth: 8)        // Stroke with width
-                            .rotationEffect(rotation)                 // Rotate the arc to start at a specific angle
-                            .frame(width: circleSize, height: circleSize)           // Circle size
+                            .trim(from: 0, to: percentageCompleted) // Show progress
+                            .stroke(displayColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                            .rotationEffect(.degrees(-90)) // Rotate to start from top
+                            .frame(width: circleSize, height: circleSize)
                     }
                     .padding(10)
                     
@@ -135,10 +140,10 @@ struct CalendarDayView: View {
                             .frame(width: circleSize, height: circleSize)
                         
                         Circle()
-                            .trim(from: startAngle, to: percentageCompleted)   // Defines the portion of the circle to show
-                            .stroke(displayColor, lineWidth: 8)        // Stroke with width
-                            .rotationEffect(rotation)                 // Rotate the arc to start at a specific angle
-                            .frame(width: circleSize, height: circleSize)           // Circle size
+                            .trim(from: 0, to: percentageCompleted) // Show progress
+                            .stroke(displayColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                            .rotationEffect(.degrees(-90)) // Rotate to start from top
+                            .frame(width: circleSize, height: circleSize)
                     }
                     .padding(10)
                     

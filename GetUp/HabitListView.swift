@@ -13,7 +13,7 @@ struct HabitListView: View {
     @ObservedObject var taskManager: TaskManager
     
     @State private var selectedCardIndex: Int
-    @State private var selectedDate: Date
+    @State private var selectedDates: [Date]
     @State private var selectedTaskList: [TaskObject]
     
     @StateObject private var proxyHolder = ScrollViewProxyHolder()
@@ -24,9 +24,9 @@ struct HabitListView: View {
         _selectedCardIndex = State(initialValue: taskManager.pastDates.count) // Assuming today is at index 30
         
         if let combinedDates = taskManager.combinedDates {
-            _selectedDate = State(initialValue: combinedDates[taskManager.pastDates.count])
+            _selectedDates = State(initialValue: [combinedDates[taskManager.pastDates.count]])
         } else{
-            _selectedDate = State(initialValue: Date())
+            _selectedDates = State(initialValue: [Date()])
         }
 
         _selectedTaskList = State(initialValue: [])
@@ -52,7 +52,7 @@ struct HabitListView: View {
                 
                 Button (
                     action: {
-                        Task { resetSelection() }
+                        Task { withAnimation{resetSelection() }}
                     },
                     label:{
                         VStack(alignment: .center, spacing:5){
@@ -90,7 +90,7 @@ struct HabitListView: View {
                                         
                                         CalendarDayView(isSelected: selectedCardIndex == index,
                                                     onSelect:{
-                                                        makeSelection(index)
+                                            withAnimation{makeSelection(index)}
                                                     },
                                                     isPast: true, isFuture: false, date: date,
                                                     totalTasks: totalTasks,
@@ -111,7 +111,7 @@ struct HabitListView: View {
                                         
                                         CalendarDayView(isSelected: selectedCardIndex == taskManager.pastDates.count + index,
                                                         onSelect:{
-                                            makeSelection(taskManager.pastDates.count + index)
+                                            withAnimation{makeSelection(taskManager.pastDates.count + index)}
                                         },
                                                         isPast: false, isFuture: false, date: date,
                                                         totalTasks: totalTasks,
@@ -131,7 +131,7 @@ struct HabitListView: View {
                                         
                                         CalendarDayView(isSelected: selectedCardIndex == taskManager.pastDates.count + 1 + index,
                                                         onSelect:{
-                                            makeSelection(taskManager.pastDates.count + 1 + index)
+                                            withAnimation{makeSelection(taskManager.pastDates.count + 1 + index)}
                                         },
                                                         isPast: false, isFuture: true, date: date,
                                                         totalTasks: totalTasks,
@@ -158,13 +158,17 @@ struct HabitListView: View {
             
             TaskListView(taskList: $selectedTaskList,
                          taskManager: taskManager,
-                         selectedDate: selectedDate)
+                         selectedDates: selectedDates)
                 .onChange(of: selectedTaskList) { newTasks in
                     // Update TaskManager with modified task list
-                    taskManager.updateTaskList(for: selectedDate, with: newTasks)
+                    withAnimation{
+                        taskManager.updateTaskList(for: selectedDates[0], with: newTasks)
+                    }
                 }
                 .onReceive(selectedTaskList.publisher.flatMap { $0.objectWillChange }) { _ in
-                    taskManager.updateTaskList(for: selectedDate, with: selectedTaskList)
+                    withAnimation{
+                        taskManager.updateTaskList(for: selectedDates[0], with: selectedTaskList)
+                    }
                 }
                 .padding(.horizontal,-15)
         }
@@ -176,16 +180,18 @@ struct HabitListView: View {
     
     private func resetSelection() {
         guard let proxy = proxyHolder.proxy else { return }
+        
+        triggerHapticFeedback()
         selectedCardIndex = taskManager.pastDates.count
         if let combinedDates = taskManager.combinedDates {
-            selectedDate = combinedDates[selectedCardIndex]
+            selectedDates = [combinedDates[selectedCardIndex]]
         }
         withAnimation {
             proxy.scrollTo(taskManager.pastDates.count, anchor: .center)
         }
         
         if let tasksListByDate = taskManager.taskListsByDate{
-            if let taskList = tasksListByDate[selectedDate] {
+            if let taskList = tasksListByDate[selectedDates[0]] {
                 selectedTaskList = taskList
             }
         }
@@ -193,16 +199,18 @@ struct HabitListView: View {
     
     private func makeSelection(_ index: Int) {
         guard let proxy = proxyHolder.proxy else { return }
+        
+        triggerHapticFeedback()
         selectedCardIndex = index
         if let combinedDates = taskManager.combinedDates {
-            selectedDate = combinedDates[selectedCardIndex]
+            selectedDates = [combinedDates[selectedCardIndex]]
         }
         withAnimation {
             proxy.scrollTo(index, anchor: .center)
         }
         
         if let tasksListByDate = taskManager.taskListsByDate{
-            if let taskList = tasksListByDate[selectedDate] {
+            if let taskList = tasksListByDate[selectedDates[0]] {
                 selectedTaskList = taskList
             }
         }

@@ -21,7 +21,17 @@ let colorDict: [Int: Color] = [
     4: Color.orange
 ]
 
+let nameDict: [Int: String] = [
+    0: "GENERAL",
+    1: "WORK",
+    2: "EXERCISE",
+    3: "LEARN",
+    4: "SOCIAL"
+]
+
 let userName = "Chava"
+
+let startingScreenIndex = 0
 
 let screenWidth = UIScreen.main.bounds.width
 let screenHeight = UIScreen.main.bounds.height
@@ -106,7 +116,7 @@ struct MainPageView: View {
         
         let manager = TaskManager()
         _taskManager = StateObject(wrappedValue: manager)
-        _selectedBottomTab = State(initialValue: 0)
+        _selectedBottomTab = State(initialValue: startingScreenIndex)
         
     }
     
@@ -198,7 +208,7 @@ private func startOfDay(for date: Date) -> Date {
 // Function to get Dummy Data
 
 func getTaskListByDate(_ date: Date) -> [TaskObject] {
-    let numTasks = Int.random(in:1...10)
+    let numTasks = Int.random(in:3...10)
     var taskList: [TaskObject] = []
     
     for i in 1...numTasks {
@@ -207,7 +217,7 @@ func getTaskListByDate(_ date: Date) -> [TaskObject] {
             name: "Task \(i)",
             description: "long text long text long text long text long text long text long text long text long text long text long text long text",
             colorIndex: Int.random(in:0...(colorDict.count-1)),
-            isDone: Bool.random(),
+            isDone: date > Calendar.current.startOfDay(for: Date()) ? false : Bool.random(),
             timer: "08:30"
         )
         taskList.append(task)

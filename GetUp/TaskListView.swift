@@ -10,9 +10,9 @@ import SwiftUI
 struct TaskListView: View {
     @Binding var taskList: [TaskObject]
     @ObservedObject var taskManager: TaskManager
-    var selectedDate: Date
+    var selectedDates: [Date]
 
-    @State private var selectedTab: Tab = .all
+    @State private var selectedTab: TaskListTab = .all
     @State private var colorFilter: Int = -1
     @State private var showColorPicker: Bool = false
     @State private var colorFilterButtonFrame: CGRect = .zero // Frame for positioning popup
@@ -26,7 +26,7 @@ struct TaskListView: View {
     @State private var newTaskTimer: Date? = nil
     @State private var newTaskSelectedColor: Int = 0
 
-    enum Tab {
+    enum TaskListTab {
         case all, remaining
     }
     
@@ -272,7 +272,7 @@ struct TaskListView: View {
 
 
 struct TabSelector: View {
-    @Binding var selectedTab: TaskListView.Tab
+    @Binding var selectedTab: TaskListView.TaskListTab
     @Binding var colorFilter: Int
     @Binding var showColorPicker: Bool
     var taskList: [TaskObject]
@@ -299,7 +299,9 @@ struct TabSelector: View {
                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
             }
             .onTapGesture {
-                selectedTab = .all
+                withAnimation {
+                    selectedTab = .all
+                }
             }
             
             HStack(alignment:.center,spacing:10){
@@ -320,7 +322,9 @@ struct TabSelector: View {
                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
             }
             .onTapGesture {
-                selectedTab = .remaining
+                withAnimation {
+                    selectedTab = .remaining
+                }
             }
                 
             HStack(alignment:.center,spacing:10){
