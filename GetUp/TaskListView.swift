@@ -23,19 +23,27 @@ struct TaskListView: View {
     
     @State private var newTaskName: String = ""
     @State private var newTaskDescription: String = ""
-    @State private var newTaskTimer: Date? = nil
+    @State private var newTaskDate: Date? = nil
+    @State private var newTaskTimerSet: Bool = false
     @State private var newTaskSelectedColor: Int = 0
-    @State private var newTaskParticipantsID: [String] = [uid]
+    @State private var newTaskParticipantsStatus: [String:Bool] = [currentUserID:false]
 
     enum TaskListTab {
         case all, remaining
     }
     
+    private var myTaskList: [TaskObject] {
+        taskList.filter { task in
+            task.participantsStatus.keys.contains(currentUserID)
+        }
+    }
+    
     private var remainingTaskList: [TaskObject] {
-        taskList.filter { !$0.isDone } // Assuming `isDone = false` means "remaining"
+        myTaskList.filter { !($0.participantsStatus[currentUserID] ?? false) } // Assuming `isDone = false` means "remaining"
     }
     
     var body: some View {
+        
         ZStack{
             VStack(alignment:.center,spacing:5){
                 HStack(alignment: .center, spacing:5){
@@ -44,7 +52,7 @@ struct TaskListView: View {
                             selectedTab: $selectedTab,
                             colorFilter: $colorFilter,
                             showColorPicker: $showColorPicker,
-                            taskList: taskList,
+                            taskList: myTaskList,
                             remainingTaskList: remainingTaskList,
                             colorFilterButtonFrame: $colorFilterButtonFrame
                         )
@@ -70,11 +78,12 @@ struct TaskListView: View {
                                 .padding(10)
                                 .background(
                                     RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.black)
+                                        .fill(selectedDates.count > 1 ? Color.black.opacity(0.2) : Color.black)
                                         .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 1)
                                 )
                         }
                     )
+                    .disabled(selectedDates.count > 1)
                 }
                 .frame(maxWidth:.infinity, maxHeight:50)
                 
@@ -173,9 +182,11 @@ struct TaskListView: View {
             NewTaskPopupView(showPopup: $showPopup,
                                              newTaskName: $newTaskName,
                                              newTaskDescription: $newTaskDescription,
-                                             selectedTime: $newTaskTimer,
+                                             newTaskDate: $newTaskDate,
+                             timerSet:$newTaskTimerSet,
                              selectedColor: $newTaskSelectedColor,
-                             participantsID: $newTaskParticipantsID,
+                             participantsStatus: $newTaskParticipantsStatus,
+                             selectedDate: selectedDates[0],
                              isEditing: isEditingTask
             ){
                 // onSave closure to add the new task
@@ -184,19 +195,19 @@ struct TaskListView: View {
                         // Update existing task
                         editingTask.name = newTaskName
                         editingTask.description = newTaskDescription
-                        editingTask.timer = newTaskTimer ?? nil
+                        editingTask.taskDate = newTaskDate ?? nil
+                        editingTask.timerSet = newTaskTimerSet
                         editingTask.colorIndex = newTaskSelectedColor
-                        editingTask.participantsID = newTaskParticipantsID
+                        editingTask.participantsStatus = newTaskParticipantsStatus
                     } else {
                         // Add a new task
                         let newTask = TaskObject(
-                            index: taskList.count,
                             name: newTaskName,
                             description: newTaskDescription,
                             colorIndex: newTaskSelectedColor,
-                            isDone: false,
-                            timer: newTaskTimer ?? nil,
-                            participantsID: newTaskParticipantsID
+                            taskDate: newTaskDate ?? nil,
+                            timerSet: false,
+                            participantsStatus: newTaskParticipantsStatus
                         )
                         taskList.append(newTask)
                     }
@@ -223,9 +234,10 @@ struct TaskListView: View {
     private func resetPopupFields() {
         newTaskName = ""
         newTaskDescription = ""
-        newTaskTimer = nil
+        newTaskDate = nil
+        newTaskTimerSet = false
         newTaskSelectedColor = 0
-        newTaskParticipantsID = [uid]
+        newTaskParticipantsStatus = [currentUserID:false]
         editingTask = nil
         isEditingTask = false
     }
@@ -234,9 +246,10 @@ struct TaskListView: View {
     private func onEdit(_ task: TaskObject) {
         newTaskName = task.name
         newTaskDescription = task.description
-        newTaskTimer = task.timer
+        newTaskDate = task.taskDate
+        newTaskTimerSet = task.timerSet
         newTaskSelectedColor = task.colorIndex
-        newTaskParticipantsID = task.participantsID
+        newTaskParticipantsStatus = task.participantsStatus
         editingTask = task
         isEditingTask = true
         showPopup = true
@@ -246,13 +259,13 @@ struct TaskListView: View {
     // Conditionally render task list based on selected tab
     private var taskListForSelectedTab: some View {
         Group {
-            let filteredList = colorFilter == -1 ? taskList : taskList.filter { $0.colorIndex == colorFilter }
+            let filteredList = colorFilter == -1 ? myTaskList : myTaskList.filter { $0.colorIndex == colorFilter }
             if selectedTab == .all {
                 ForEach(filteredList) { task in
                     TaskCardView(taskObject: task, onEdit: { onEdit(task) })
                 }
             } else {
-                ForEach(filteredList.filter { !$0.isDone }) { task in
+                ForEach(filteredList.filter { !($0.participantsStatus[currentUserID] ?? false) }) { task in
                     TaskCardView(taskObject: task, onEdit: { onEdit(task) })
                 }
             }

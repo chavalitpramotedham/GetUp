@@ -19,7 +19,7 @@ struct TaskCardView: View {
     public init(taskObject: TaskObject, onEdit: @escaping () -> Void) {
         self.taskObject = taskObject
         self.onEdit = onEdit // Initialize the onEdit property
-        _isDone = State(initialValue: taskObject.isDone) // Initialize with the model's `isDone` value
+        _isDone = State(initialValue: taskObject.participantsStatus[currentUserID] ?? false) // Initialize with the model's `isDone` value
     }
     
     var body: some View {
@@ -27,12 +27,18 @@ struct TaskCardView: View {
         let taskName: String = taskObject.name
         let taskDescription: String = taskObject.description
         let taskColorIndex: Int = taskObject.colorIndex
-        let taskIndex: Int = taskObject.index
-        let timer: Date? = taskObject.timer ?? nil
-        let participantsID = taskObject.participantsID
+        let taskDate: Date? = taskObject.taskDate ?? nil
+        let timerSet: Bool = taskObject.timerSet
+        let participantsStatus = taskObject.participantsStatus
+        let creatorID = taskObject.creatorID
         
-        var otherParticipantList: [String] {
-            getOtherUIDs(from: participantsID).map { getOtherUsername(from: $0) }
+        var otherParticipantDict: [String: String] {
+            let uids = getOtherUIDs(from: participantsStatus)
+            var dict: [String: String] = [:]
+            for uid in uids {
+                dict[uid] = getOtherUsername(from: uid)
+            }
+            return dict
         }
         
         HStack (alignment: .center,spacing: 20){
@@ -51,19 +57,21 @@ struct TaskCardView: View {
                         .fontWeight(.bold)
                         .lineLimit(2)
                     
-                    Button (
-                        action: {
-                            withAnimation {
-                                onEdit()
+                    if (creatorID == currentUserID){
+                        Button (
+                            action: {
+                                withAnimation {
+                                    onEdit()
+                                }
+                            },
+                            label:{
+                                Image(systemName: "pencil")
+                                    .font(.system(size: 15))
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.gray)
                             }
-                        },
-                        label:{
-                            Image(systemName: "pencil")
-                                .font(.system(size: 15))
-                                .fontWeight(.bold)
-                                .foregroundColor(.gray)
-                        }
-                    )
+                        )
+                    }
                 }
                 
                 VStack(alignment:.leading, spacing:10){
@@ -88,7 +96,8 @@ struct TaskCardView: View {
                         Image(systemName: "timer")
                             .font(.system(size: 16))
                             .foregroundStyle(.black.opacity(0.75))
-                        Text(formatDateTo24HourTime(date:timer))
+                    
+                        Text(timerSet ? formatDateTo24HourTime(date:taskDate) : "-")
                             .font(.system(size: 16))
                             .fontWeight(.semibold)
                             .foregroundStyle(.black.opacity(0.75))
@@ -98,18 +107,31 @@ struct TaskCardView: View {
                             .font(.system(size: 15))
                             .foregroundStyle(.black.opacity(0.75))
                         
-                        if otherParticipantList.count >= 1 {
+                        if otherParticipantDict.count >= 1 {
                             
-                            if otherParticipantList.count >= 2 {
-                                Text("\(otherParticipantList[0]) +\(otherParticipantList.count - 1)")
+                            if otherParticipantDict.count >= 2 {
+                                Text("\(otherParticipantDict.first.map { $0.value } ?? "Unknown"))  +\(otherParticipantDict.count - 1)")
                                     .font(.system(size: 16))
                                     .fontWeight(.semibold)
                                     .foregroundStyle(.black.opacity(0.75))
+                                
+                                // Insert view all progress sheet (future work)
+                                
                             } else{
-                                Text("\(otherParticipantList[0])")
-                                    .font(.system(size: 16))
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(.black.opacity(0.75))
+                                HStack(spacing:5){
+                                    Text((otherParticipantDict.first.map { $0.value } ?? "Unknown"))
+                                        .font(.system(size: 16))
+                                        .fontWeight(.semibold)
+                                        .foregroundStyle(.black.opacity(0.75))
+                                    
+                                    if let firstKey = otherParticipantDict.keys.first {
+                                        let checkMarkColor = participantsStatus[firstKey] == true ? Color.green : Color.gray.opacity(0.3)
+                                        
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.system(size: 14))
+                                            .foregroundStyle(checkMarkColor)
+                                    }
+                                }
                             }
                             
                         } else{
@@ -133,8 +155,8 @@ struct TaskCardView: View {
             }
             .frame(maxHeight: .infinity)
             .onTapGesture {
-                taskObject.isDone.toggle() // Directly toggle taskObject's isDone
-                isDone = taskObject.isDone
+                taskObject.participantsStatus[currentUserID]?.toggle() // Directly toggle taskObject's isDone
+                isDone = taskObject.participantsStatus[currentUserID] ?? false
                 triggerHapticFeedback()
             }
         }

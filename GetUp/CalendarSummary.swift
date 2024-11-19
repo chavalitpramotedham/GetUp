@@ -34,7 +34,7 @@ struct CalendarSummary: View {
     
     // MARK: - Overall Completion Chart
     private func overallCompletionChart() -> some View {
-        let completedTasks = totalTaskList.filter { $0.isDone }.count
+        let completedTasks = totalTaskList.filter { $0.participantsStatus[currentUserID] ?? false }.count
         let totalTasks = totalTaskList.count
         let completionPercentage = totalTasks > 0 ? CGFloat(completedTasks) / CGFloat(totalTasks) : 0
         
@@ -171,7 +171,7 @@ func taskCategories(_ taskList: [TaskObject]) -> [(name: String, color: Color, p
         let name = nameDict[index] ?? ""
         let tasksInCategory = allTasks.filter { $0.colorIndex == index }
         let totalTasks = tasksInCategory.count
-        let completedTasks = tasksInCategory.filter { $0.isDone }.count
+        let completedTasks = tasksInCategory.filter { $0.participantsStatus[currentUserID] ?? false }.count
         let progress: CGFloat = totalTasks > 0 ? CGFloat(completedTasks) / CGFloat(totalTasks) : 0
         
 //        if(totalTasks > 0){

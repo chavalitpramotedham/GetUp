@@ -36,6 +36,12 @@ struct CalendarView: View {
     init(taskManager: TaskManager) {
         self.taskManager = taskManager
     }
+    
+    private var myTaskList: [TaskObject] {
+        selectedTaskList.filter { task in
+            task.participantsStatus.keys.contains(currentUserID)
+        }
+    }
 
     var body: some View {
         ZStack{
@@ -74,7 +80,7 @@ struct CalendarView: View {
                                     )
                                 }
                                 
-                                CalendarSummary(taskManager: TaskManager(), totalTaskList: selectedTaskList)
+                                CalendarSummary(taskManager: TaskManager(), totalTaskList: myTaskList)
                                 
                             }
                             .padding()
@@ -177,7 +183,7 @@ struct CalendarView: View {
     private var calendarPageHeader: some View {
         HStack(alignment: .bottom) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("\(userName)'s Calendar")
+                Text("\(currentUserName)'s Calendar")
                     .font(.title2)
                     .fontWeight(.heavy)
                     .foregroundColor(.black)
@@ -314,7 +320,7 @@ struct CalendarView: View {
         if let tasksListByDate = taskManager.taskListsByDate{
             if let tasks = tasksListByDate[date] {
                 let totalTasks = tasks.count
-                let completedTasks = tasks.filter { $0.isDone }.count
+                let completedTasks = tasks.filter { $0.participantsStatus[currentUserID] ?? false }.count
                 
                 let percentageCompleted: CGFloat = CGFloat(completedTasks)/CGFloat(totalTasks)
                 let printPercentageCompleted: Int = Int(percentageCompleted*100)
@@ -518,11 +524,6 @@ struct CalendarView: View {
         let components = calendar.dateComponents([.year, .month], from: date)
         return calendar.date(from: components) ?? date
     }
-
-    private func startOfDay(for date: Date) -> Date {
-        return calendar.startOfDay(for: date)
-    }
-    
 }
 
 struct DailyOrWeeklySelector: View {

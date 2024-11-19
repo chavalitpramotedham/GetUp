@@ -24,36 +24,94 @@ struct WelcomeView: View {
                     )
             
             
-            VStack (alignment: .leading, spacing: 25) {
+            VStack (alignment: .leading, spacing: 10) {
                 Text("Get Up!")
                     .font(.largeTitle)
                     .fontWeight(.heavy)
-                    .foregroundStyle(.black)
+                    .foregroundStyle(.white)
                 
                 Text("Reminders for Chava & Cheryl")
                     .font(.title2)
-                    .fontWeight(.regular)
-                    .foregroundStyle(.black)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.white)
                 
-                NavigationLink(destination: MainPageView()) {
-                    Text("Get Started")
-                        .font(.title3)
-                        .fontWeight(.heavy)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding([.top, .bottom], 10)
-                        .padding([.leading, .trailing], 20)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                . fill(Color.black)
-                        )
-                }
-                .padding(.top,10)
-
+                Spacer()
+                
+                UserSelectionView()
             }
-            .offset(y:screenWidth/1.6)
+//            .offset(y:screenWidth/2)
             .padding(50)
         }
+    }
+}
+
+struct UserSelectionView: View {
+    
+    var body: some View {
+        HStack(alignment: .top){
+            Spacer()
+            
+            ForEach(Array(userDB.keys).sorted(), id: \.self){ userID in
+                
+                let profilePicture = userDB[userID]?["profilePicture"]?[0] ?? "person"
+                let userName = userDB[userID]?["userName"]?[0] ?? "Unknown"
+                
+                if currentUserID == userID{
+                    VStack(spacing: 20) {
+                        Image(profilePicture)
+                            .resizable()
+                            .scaledToFill()
+                            .scaleEffect(1.5)
+                            .frame(width: (screenWidth - 120) / 2, height: (screenWidth - 120) / 2)
+                            .clipShape(Circle()) // Make the image circular
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white, lineWidth: 2) // Add a black outline
+                            )
+                            .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
+                        
+                        VStack(spacing:5){
+                            Text(userName)
+                                .font(.headline)
+                                .fontWeight(.bold)
+                                .foregroundStyle(.black)
+                            
+                            Text("Current user")
+                                .font(.subheadline)
+                                .fontWeight(.regular)
+                                .foregroundStyle(.black)
+                        }
+                    }
+                } else{
+                    NavigationLink(destination: MainPageView()) {
+                        VStack(spacing: 20) {
+                            Image(profilePicture)
+                                .resizable()
+                                .scaledToFill()
+                                .scaleEffect(1.5)
+                                .frame(width: (screenWidth - 120) / 2, height: (screenWidth - 120) / 2)
+                                .clipShape(Circle()) // Make the image circular
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.black, lineWidth: 1) // Add a black outline
+                                )
+                                .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
+                            
+                            Text(userName)
+                                .font(.headline)
+                                .fontWeight(.bold)
+                                .foregroundStyle(.black)
+                        }
+                    }
+                    .simultaneousGesture(TapGesture().onEnded {
+                        setUID(userID) // Initialize UID for Chava
+                    })
+                }
+                
+                Spacer()
+            }
+        }
+        .padding(.top,10)
     }
 }
 

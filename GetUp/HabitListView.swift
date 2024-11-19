@@ -38,7 +38,7 @@ struct HabitListView: View {
             
             HStack(alignment: .bottom){
                 VStack(alignment: .leading, spacing:5){
-                    Text("Hi, "+userName+"...")
+                    Text("Hi, "+currentUserName+"...")
                         .font(.title2)
                         .fontWeight(.heavy)
                         .foregroundColor(.black)
@@ -85,17 +85,27 @@ struct HabitListView: View {
                                 
                                 if let tasksListByDate = taskManager.taskListsByDate{
                                     if let tasks = tasksListByDate[date] {
-                                        let totalTasks = tasks.count
-                                        let completedTasks = tasks.filter { $0.isDone }.count
                                         
+                                        // Filter tasks safely
+                                        let myTasks = tasks.filter { task in
+                                            task.participantsStatus.keys.contains(currentUserID)
+                                        }
+
+                                        // Safely count tasks
+                                        let totalTasks = myTasks.count
+                                        let completedTasks = myTasks.filter { $0.participantsStatus[currentUserID] == true }.count
+                                        
+                                        // Create CalendarDayView
                                         CalendarDayView(isSelected: selectedCardIndex == index,
-                                                    onSelect:{
-                                            withAnimation{makeSelection(index)}
-                                                    },
-                                                    isPast: true, isFuture: false, date: date,
-                                                    totalTasks: totalTasks,
-                                                    completedTasks: completedTasks,
-                                                    id: index)
+                                                        onSelect: {
+                                                            withAnimation { makeSelection(index) }
+                                                        },
+                                                        isPast: true,
+                                                        isFuture: false,
+                                                        date: date,
+                                                        totalTasks: totalTasks,
+                                                        completedTasks: completedTasks,
+                                                        id: index)
                                             .id(index)
                                     }
                                 }
@@ -106,8 +116,16 @@ struct HabitListView: View {
                             ForEach(Array(taskManager.todayDates.enumerated()), id: \.element) { index, date in
                                 if let tasksListByDate = taskManager.taskListsByDate{
                                     if let tasks = tasksListByDate[date] {
-                                        let totalTasks = tasks.count
-                                        let completedTasks = tasks.filter { $0.isDone }.count
+                                        
+                                        // Filter tasks safely
+                                        let myTasks = tasks.filter { task in
+                                            task.participantsStatus.keys.contains(currentUserID)
+                                        }
+
+                                        // Safely count tasks
+                                        let totalTasks = myTasks.count
+                                        let completedTasks = myTasks.filter { $0.participantsStatus[currentUserID] == true }.count
+                                        
                                         
                                         CalendarDayView(isSelected: selectedCardIndex == taskManager.pastDates.count + index,
                                                         onSelect:{
@@ -126,8 +144,14 @@ struct HabitListView: View {
                                 
                                 if let tasksListByDate = taskManager.taskListsByDate{
                                     if let tasks = tasksListByDate[date] {
-                                        let totalTasks = tasks.count
-                                        let completedTasks = tasks.filter { $0.isDone }.count
+                                        // Filter tasks safely
+                                        let myTasks = tasks.filter { task in
+                                            task.participantsStatus.keys.contains(currentUserID)
+                                        }
+
+                                        // Safely count tasks
+                                        let totalTasks = myTasks.count
+                                        let completedTasks = myTasks.filter { $0.participantsStatus[currentUserID] == true }.count
                                         
                                         CalendarDayView(isSelected: selectedCardIndex == taskManager.pastDates.count + 1 + index,
                                                         onSelect:{
@@ -220,7 +244,7 @@ struct HabitListView: View {
         if let tasksListByDate = taskManager.taskListsByDate{
             if let combinedDates = taskManager.combinedDates{
                 if let taskList = tasksListByDate[combinedDates[selectedCardIndex]] {
-                    taskList[index].isDone.toggle()
+                    taskList[index].participantsStatus[currentUserID]?.toggle()
                 }
             }
         }

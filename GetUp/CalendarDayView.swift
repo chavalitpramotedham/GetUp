@@ -26,8 +26,8 @@ struct CalendarDayView: View {
     
     var body: some View{
         
-        let percentageCompleted: CGFloat = CGFloat(completedTasks)/CGFloat(totalTasks)
-        let printPercentageCompleted: Int = Int(percentageCompleted*100)
+        let percentageCompleted: CGFloat = totalTasks > 0 ? CGFloat(completedTasks) / CGFloat(totalTasks) : 0
+        let printPercentageCompleted: Int = totalTasks > 0 ? Int(percentageCompleted * 100) : 0
         let numTasksLeft: Int = totalTasks - completedTasks
         
         let displayColor: Color = getDisplayColorByCompletion(for: percentageCompleted)

@@ -9,72 +9,33 @@ import SwiftUI
 import Foundation
 import Combine
 
-import SwiftUI
-import Foundation
-import Combine
-
-let colorDict: [Int: Color] = [
-    0: Color.gray,
-    1: Color.mint,
-    2: Color.purple,
-    3: Color.pink,
-    4: Color.orange
-]
-
-let nameDict: [Int: String] = [
-    0: "GENERAL",
-    1: "WORK",
-    2: "EXERCISE",
-    3: "LEARN",
-    4: "SOCIAL"
-]
-
-// To be stored in DB
-
-let userName = "Chava"
-let uid = "123"
-
-let userName2 = "Cheryl"
-let uid2 = "456"
-
-let userDict: [String:String] = [
-    uid: userName,
-    uid2: userName2
-]
+//import FirebaseFirestore
 
 //
 
-let startingScreenIndex = 0
-
-let screenWidth = UIScreen.main.bounds.width
-let screenHeight = UIScreen.main.bounds.height
+var numPastFutureDates: Int = 60
 
 class TaskManager: ObservableObject {
+    @Published var rawTaskList: [TaskObject] = getRawTastList()
     @Published var taskListsByDate: [Date: [TaskObject]]?
     
-    @Published var pastDates: [Date] = getPastDays(30)
+    @Published var pastDates: [Date] = getPastDays(numPastFutureDates)
     @Published var todayDates: [Date] = getToday()
-    @Published var futureDates: [Date] = getFutureDays(7)
+    @Published var futureDates: [Date] = getFutureDays(numPastFutureDates)
     @Published var combinedDates: [Date]?
     
     init() {
-        // Now that pastDates, todayDates, and futureDates are initialized, we can safely create combinedDates
         self.combinedDates = pastDates + todayDates + futureDates
         
-        // After combinedDates is set, initialize taskListsByDate
         if let combinedDates = self.combinedDates {
-            self.taskListsByDate = TaskManager.generateTaskLists(for: combinedDates)
+            self.taskListsByDate = createTaskListsByDate(tasks: rawTaskList, dateList: combinedDates)
         }
-    }
-    
-    // Static function to generate task lists without needing `self`
-    private static func generateTaskLists(for dates: [Date]) -> [Date: [TaskObject]] {
-        return Dictionary(uniqueKeysWithValues: dates.map { ($0, getTaskListByDate($0)) })
     }
 
     // Method to update `taskListsByDate` after modifying `selectedTaskList`
     func updateTaskList(for date: Date, with tasks: [TaskObject]) {
         taskListsByDate?[date] = tasks
+        rawTaskList = taskListsByDate?.flatMap { $0.value } ?? []
     }
 }
 
@@ -83,42 +44,94 @@ class ScrollViewProxyHolder: ObservableObject {
 }
 
 class TaskObject: ObservableObject, Identifiable, Equatable{
-    @Published var index: Int
+    @Published var taskID: String
     @Published var name: String
     @Published var description: String
     @Published var colorIndex: Int
-    @Published var isDone: Bool{
+    
+    @Published var taskDate : Date?
+    @Published var timerSet : Bool
+    @Published var creatorID: String
+    @Published var participantsStatus : [String:Bool]{
         didSet {
             objectWillChange.send() // Notify listeners
         }
     }
-    @Published var timer: Date?
-    @Published var creatorID: String
-    @Published var participantsID: [String]
 
-    init(index: Int = -1, name: String = "Task", description: String = "Description", colorIndex: Int = 0,isDone: Bool = false, timer: Date? = Date(), creatorID: String = uid, participantsID: [String] = [uid]) {
-        self.index = index
+    init(taskID: String = "\(UIDevice.current.identifierForVendor?.uuidString ?? "unknown")-\(UUID().uuidString)", name: String = "Task", description: String = "Description", colorIndex: Int = 0,isDone: Bool = false, taskDate: Date? = Date(), timerSet: Bool = false, creatorID: String = currentUserID, participantsStatus: [String:Bool] = [currentUserID:false]) {
+        self.taskID = taskID
         self.name = name
         self.description = description
         self.colorIndex = colorIndex
-        self.isDone = isDone
-        self.timer = timer ?? nil
+        self.taskDate = taskDate ?? nil
+        self.timerSet = timerSet
         self.creatorID = creatorID
-        self.participantsID = participantsID
+        self.participantsStatus = participantsStatus
     }
     
     static func == (lhs: TaskObject, rhs: TaskObject) -> Bool {
         lhs.id == rhs.id &&
-        lhs.index == rhs.index &&
+        lhs.taskID == rhs.taskID &&
         lhs.name == rhs.name &&
         lhs.description == rhs.description &&
         lhs.colorIndex == rhs.colorIndex &&
-        lhs.isDone == rhs.isDone &&
-        lhs.timer == rhs.timer &&
+        lhs.taskDate == rhs.taskDate &&
+        lhs.timerSet == rhs.timerSet &&
         lhs.creatorID == rhs.creatorID &&
-        lhs.participantsID == rhs.participantsID
+        lhs.participantsStatus == rhs.participantsStatus
+    }
+    
+    // Convert to dictionary for Firebase
+    func toDictionary() -> [String: Any] {
+        return [
+            "taskID": taskID,
+            "name": name,
+            "description": description,
+            "colorIndex": colorIndex,
+//            "taskDate": Timestamp(date: taskDate),
+            "timerSet": timerSet,
+            "creatorID": creatorID,
+            "participantsStatus": participantsStatus
+        ]
     }
 }
+
+// Function to get Dummy Data
+
+func getTaskListByDate(_ date: Date) -> [TaskObject] {
+    let numTasks = Int.random(in:5...20)
+    var taskList: [TaskObject] = []
+    
+    let keys = Array(userDB.keys)
+    
+    for i in 1...numTasks {
+        
+        var randomParticipantStatusDict: [String: Bool] = [:]
+        
+        // Shuffle the keys and take the desired number of keys
+        let selectedKeys = keys.shuffled().prefix(Int.random(in:0...1))
+        
+        // Assign a random Bool to each selected key
+        for key in selectedKeys {
+            randomParticipantStatusDict[key] = Bool.random()
+        }
+        
+        let task = TaskObject(
+            name: "Task \(i)",
+            description: "long text long text long text long text long text long text long text long text long text long text long text long text",
+            colorIndex: Int.random(in:0...(colorDict.count-1)),
+            taskDate: randomTimeOnDate(date),
+            timerSet: Bool.random(),
+            creatorID: currentUserID,
+            participantsStatus: randomParticipantStatusDict
+        )
+        taskList.append(task)
+    }
+    
+    return taskList
+}
+
+
 
 struct MainPageView: View {
     
@@ -165,11 +178,8 @@ struct MainPageView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 case 3:
-                    Text("Profile View")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.orange)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    UserSelectionView()
+                        .padding(.horizontal,30)
 
                 default:
                     Text("Invalid Tab")
@@ -184,6 +194,44 @@ struct MainPageView: View {
         .ignoresSafeArea()
         .navigationBarBackButtonHidden(true)
     }
+}
+
+// Get Raw Data
+func getRawTastList() -> [TaskObject]{
+    let pastDates: [Date] = getPastDays(numPastFutureDates)
+    let todayDates: [Date] = getToday()
+    let futureDates: [Date] = getFutureDays(numPastFutureDates)
+    
+    let combinedDates = pastDates + todayDates + futureDates
+    
+    let taskListsByDate = Dictionary(uniqueKeysWithValues: combinedDates.map { ($0, getTaskListByDate($0)) })
+    
+    return taskListsByDate.values.flatMap { $0 }
+}
+
+// Parsing data into TaskListByDate
+func createTaskListsByDate(tasks: [TaskObject], dateList: [Date]) -> [Date: [TaskObject]]? {
+    // Initialize the result dictionary with empty arrays for each date in the dateList
+    var taskListsByDate: [Date: [TaskObject]] = [:]
+    let calendar = Calendar.current
+    
+    // Ensure only valid dates in dateList are included
+    for date in dateList {
+        let startOfDay = calendar.startOfDay(for: date)
+        taskListsByDate[startOfDay] = []
+    }
+    
+    // Iterate through tasks and add them to the appropriate date in the dictionary
+    for task in tasks {
+        if let taskDate = task.taskDate {
+            let startOfDay = calendar.startOfDay(for: taskDate)
+            if taskListsByDate.keys.contains(startOfDay) {
+                taskListsByDate[startOfDay]?.append(task)
+            }
+        }
+    }
+    
+    return taskListsByDate.isEmpty ? nil : taskListsByDate
 }
 
 // Functions to get Past, Present, Future days
@@ -220,31 +268,22 @@ func getFutureDays(_ numberOfDays: Int) -> [Date] {
     return dates
 }
 
-private func startOfDay(for date: Date) -> Date {
+func startOfDay(for date: Date) -> Date {
     return Calendar.current.startOfDay(for: date)
 }
 
-// Function to get Dummy Data
-
-func getTaskListByDate(_ date: Date) -> [TaskObject] {
-    let numTasks = Int.random(in:3...10)
-    var taskList: [TaskObject] = []
+func currentTimeOfDate(for date: Date) -> Date{
+    let calendar = Calendar.current
+    let now = Date() // Current date and time
     
-    for i in 1...numTasks {
-        let task = TaskObject(
-            index: i,
-            name: "Task \(i)",
-            description: "long text long text long text long text long text long text long text long text long text long text long text long text",
-            colorIndex: Int.random(in:0...(colorDict.count-1)),
-            isDone: date > Calendar.current.startOfDay(for: Date()) ? false : Bool.random(),
-            timer: randomTimeOnDate(date),
-            creatorID: uid,
-            participantsID: Int.random(in:0...1) > 0 ? [uid,uid2] : [uid]
-        )
-        taskList.append(task)
-    }
+    // Extract the time components (hour, minute, second) from the current time
+    let timeComponents = calendar.dateComponents([.hour, .minute, .second], from: now)
     
-    return taskList
+    // Combine the time components with the given date
+    return calendar.date(bySettingHour: timeComponents.hour ?? 0,
+                         minute: timeComponents.minute ?? 0,
+                         second: timeComponents.second ?? 0,
+                         of: date) ?? date
 }
 
 func randomTimeOnDate(_ date: Date) -> Date {
@@ -264,7 +303,7 @@ func randomTimeOnDate(_ date: Date) -> Date {
 func formatDateTo24HourTime(date: Date?) -> String {
     if let validatedDate = date{
         let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm" // 24-hour format
+        formatter.dateFormat = "h:mm a" // 12-hour format with AM/PM
         formatter.timeZone = TimeZone.current // Optional: Ensures it's in the local time zone
         return formatter.string(from: validatedDate)
     }
@@ -285,12 +324,12 @@ func getDisplayColorByCompletion(for percentageCompleted: CGFloat) -> Color {
     }
 }
 
-func getOtherUIDs(from array: [String]) -> [String] {
-    return array.filter { !$0.contains(uid) }
+func getOtherUIDs(from dict: [String: Bool]) -> [String] {
+    return dict.keys.filter { $0 != currentUserID }
 }
 
 func getOtherUsername(from uid: String) -> String{
-    return userDict[uid] ?? ""
+    return userDB[uid]?["userName"]?[0] ?? ""
 }
 
 #Preview{
