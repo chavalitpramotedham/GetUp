@@ -9,14 +9,15 @@ import SwiftUI
 import Foundation
 
 struct TaskCardView: View {
-//    @Binding var taskObject: TaskObject
+    @ObservedObject var taskManager: TaskManager
     @ObservedObject var taskObject: TaskObject
     @State private var isExpanded = false
     @State private var isDone: Bool
     
     var onEdit: () -> Void // Closure to trigger the edit
     
-    public init(taskObject: TaskObject, onEdit: @escaping () -> Void) {
+    public init(taskManager: TaskManager, taskObject: TaskObject, onEdit: @escaping () -> Void) {
+        self.taskManager = taskManager
         self.taskObject = taskObject
         self.onEdit = onEdit // Initialize the onEdit property
         _isDone = State(initialValue: taskObject.participantsStatus[currentUserID] ?? false) // Initialize with the model's `isDone` value
@@ -157,6 +158,8 @@ struct TaskCardView: View {
             .onTapGesture {
                 taskObject.participantsStatus[currentUserID]?.toggle() // Directly toggle taskObject's isDone
                 isDone = taskObject.participantsStatus[currentUserID] ?? false
+                
+                taskManager.updateTaskToDB(taskObject)
                 triggerHapticFeedback()
             }
         }

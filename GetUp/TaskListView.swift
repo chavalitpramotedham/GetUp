@@ -191,25 +191,32 @@ struct TaskListView: View {
             ){
                 // onSave closure to add the new task
                 withAnimation {
-                    if isEditingTask, let editingTask = editingTask {
-                        // Update existing task
-                        editingTask.name = newTaskName
-                        editingTask.description = newTaskDescription
-                        editingTask.taskDate = newTaskDate ?? nil
-                        editingTask.timerSet = newTaskTimerSet
-                        editingTask.colorIndex = newTaskSelectedColor
-                        editingTask.participantsStatus = newTaskParticipantsStatus
-                    } else {
+                    if isEditingTask{
+                        if let editingTask = editingTask {
+                            // Update existing task
+                            editingTask.name = newTaskName
+                            editingTask.description = newTaskDescription
+                            editingTask.colorIndex = newTaskSelectedColor
+                            editingTask.taskDate = newTaskDate ?? currentTimeOfDate(for: selectedDates[0])
+                            editingTask.timerSet = newTaskTimerSet
+                            editingTask.participantsStatus = newTaskParticipantsStatus
+                            
+                            // Update task by taskID
+                            taskManager.updateTaskToDB(editingTask)
+                        }
+                    }
+                    else {
                         // Add a new task
                         let newTask = TaskObject(
                             name: newTaskName,
                             description: newTaskDescription,
                             colorIndex: newTaskSelectedColor,
-                            taskDate: newTaskDate ?? nil,
-                            timerSet: false,
+                            taskDate: newTaskDate ?? currentTimeOfDate(for: selectedDates[0]),
+                            timerSet: newTaskTimerSet,
                             participantsStatus: newTaskParticipantsStatus
                         )
                         taskList.append(newTask)
+                        taskManager.saveTaskToDB(newTask)
                     }
                 }
                 
@@ -224,6 +231,7 @@ struct TaskListView: View {
                     if let index = taskList.firstIndex(of: editingTask) {
                         taskList.remove(at: index)
                     }
+                    taskManager.removeTaskFromDB(editingTask)
                 }
                 resetPopupFields()
             }
@@ -262,11 +270,11 @@ struct TaskListView: View {
             let filteredList = colorFilter == -1 ? myTaskList : myTaskList.filter { $0.colorIndex == colorFilter }
             if selectedTab == .all {
                 ForEach(filteredList) { task in
-                    TaskCardView(taskObject: task, onEdit: { onEdit(task) })
+                    TaskCardView(taskManager: taskManager, taskObject: task, onEdit: { onEdit(task) })
                 }
             } else {
                 ForEach(filteredList.filter { !($0.participantsStatus[currentUserID] ?? false) }) { task in
-                    TaskCardView(taskObject: task, onEdit: { onEdit(task) })
+                    TaskCardView(taskManager: taskManager, taskObject: task, onEdit: { onEdit(task) })
                 }
             }
         }

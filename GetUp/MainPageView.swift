@@ -9,14 +9,13 @@ import SwiftUI
 import Foundation
 import Combine
 
-//import FirebaseFirestore
+import FirebaseCore
+import FirebaseFirestore
 
-//
-
-var numPastFutureDates: Int = 60
+var numPastFutureDates: Int = 90
 
 class TaskManager: ObservableObject {
-    @Published var rawTaskList: [TaskObject] = getRawTastList()
+    private var rawTaskList: [TaskObject] = getRawTastList()
     @Published var taskListsByDate: [Date: [TaskObject]]?
     
     @Published var pastDates: [Date] = getPastDays(numPastFutureDates)
@@ -24,11 +23,42 @@ class TaskManager: ObservableObject {
     @Published var futureDates: [Date] = getFutureDays(numPastFutureDates)
     @Published var combinedDates: [Date]?
     
+    private var firestoreManager = FirestoreManager()
+    
     init() {
+        
         self.combinedDates = pastDates + todayDates + futureDates
         
-        if let combinedDates = self.combinedDates {
-            self.taskListsByDate = createTaskListsByDate(tasks: rawTaskList, dateList: combinedDates)
+        fetchTasks()
+        
+//        firestoreManager.fetchTasks { [weak self] tasks, error in
+//            if let error = error {
+//                print("Error fetching tasks: \(error.localizedDescription)")
+//            } else if let tasks = tasks {
+//                DispatchQueue.main.async {
+//                    print("Successfully fetched tasks!")
+//                    print(tasks)
+//                    self?.rawTaskList = tasks // Update the list on the main thread
+//                    
+//                    if let combinedDates = self?.combinedDates {
+//                        self?.taskListsByDate = createTaskListsByDate(tasks: self?.rawTaskList ?? [], dateList: combinedDates)
+//                    }
+//                }
+//            }
+//        }
+    }
+    
+    func fetchTasks() {
+        firestoreManager.fetchTasks { [weak self] fetchedTasks, error in
+            if let error = error {
+                print("Error fetching tasks: \(error.localizedDescription)")
+            } else if let fetchedTasks = fetchedTasks {
+                DispatchQueue.main.async {
+                    self?.rawTaskList = fetchedTasks
+                    
+                    self?.taskListsByDate = createTaskListsByDate(tasks: self?.rawTaskList ?? [], dateList: self?.combinedDates ?? [])
+                }
+            }
         }
     }
 
@@ -37,63 +67,40 @@ class TaskManager: ObservableObject {
         taskListsByDate?[date] = tasks
         rawTaskList = taskListsByDate?.flatMap { $0.value } ?? []
     }
+    
+    func saveTaskToDB(_ task: TaskObject) {
+        firestoreManager.saveTask(task) { error in
+            if let error = error {
+                print("Error saving task: \(error.localizedDescription)")
+            } else {
+                print("Task successfully saved!")
+            }
+        }
+    }
+    
+    func updateTaskToDB(_ task: TaskObject){
+        firestoreManager.updateTask(task) { error in
+            if let error = error {
+                print("Error updating task: \(error.localizedDescription)")
+            } else {
+                print("Task successfully updated!")
+            }
+        }
+    }
+    
+    func removeTaskFromDB(_ task: TaskObject){
+        firestoreManager.deleteTask(task) { error in
+            if let error = error {
+                print("Error deleting task: \(error.localizedDescription)")
+            } else {
+                print("Task successfully deleted!")
+            }
+        }
+    }
 }
 
 class ScrollViewProxyHolder: ObservableObject {
     var proxy: ScrollViewProxy?
-}
-
-class TaskObject: ObservableObject, Identifiable, Equatable{
-    @Published var taskID: String
-    @Published var name: String
-    @Published var description: String
-    @Published var colorIndex: Int
-    
-    @Published var taskDate : Date?
-    @Published var timerSet : Bool
-    @Published var creatorID: String
-    @Published var participantsStatus : [String:Bool]{
-        didSet {
-            objectWillChange.send() // Notify listeners
-        }
-    }
-
-    init(taskID: String = "\(UIDevice.current.identifierForVendor?.uuidString ?? "unknown")-\(UUID().uuidString)", name: String = "Task", description: String = "Description", colorIndex: Int = 0,isDone: Bool = false, taskDate: Date? = Date(), timerSet: Bool = false, creatorID: String = currentUserID, participantsStatus: [String:Bool] = [currentUserID:false]) {
-        self.taskID = taskID
-        self.name = name
-        self.description = description
-        self.colorIndex = colorIndex
-        self.taskDate = taskDate ?? nil
-        self.timerSet = timerSet
-        self.creatorID = creatorID
-        self.participantsStatus = participantsStatus
-    }
-    
-    static func == (lhs: TaskObject, rhs: TaskObject) -> Bool {
-        lhs.id == rhs.id &&
-        lhs.taskID == rhs.taskID &&
-        lhs.name == rhs.name &&
-        lhs.description == rhs.description &&
-        lhs.colorIndex == rhs.colorIndex &&
-        lhs.taskDate == rhs.taskDate &&
-        lhs.timerSet == rhs.timerSet &&
-        lhs.creatorID == rhs.creatorID &&
-        lhs.participantsStatus == rhs.participantsStatus
-    }
-    
-    // Convert to dictionary for Firebase
-    func toDictionary() -> [String: Any] {
-        return [
-            "taskID": taskID,
-            "name": name,
-            "description": description,
-            "colorIndex": colorIndex,
-//            "taskDate": Timestamp(date: taskDate),
-            "timerSet": timerSet,
-            "creatorID": creatorID,
-            "participantsStatus": participantsStatus
-        ]
-    }
 }
 
 // Function to get Dummy Data
@@ -185,7 +192,6 @@ struct MainPageView: View {
                     Text("Invalid Tab")
                 }
             }
-//            .frame(maxWidth: .infinity, maxHeight: .infinity)
             
             FloatingNavBar(selectedTab: $selectedBottomTab)
                 .frame(maxWidth: screenWidth)
@@ -241,7 +247,7 @@ func getPastDays(_ numberOfDays: Int) -> [Date] {
     let calendar = Calendar.current
     
     // Generate dates from 30 days ago to today
-    for dayOffset in (1..<30).reversed() {
+    for dayOffset in (1..<numberOfDays).reversed() {
         if let date = calendar.date(byAdding: .day, value: -dayOffset, to: Date()) {
             dates.append(startOfDay(for: date))
         }
@@ -259,7 +265,7 @@ func getFutureDays(_ numberOfDays: Int) -> [Date] {
     var dates: [Date] = []
     let calendar = Calendar.current
     
-    for dayOffset in 1...7 { // Start from 1 to exclude today
+    for dayOffset in 1...numberOfDays { // Start from 1 to exclude today
         if let date = calendar.date(byAdding: .day, value: dayOffset, to: Date()) {
             dates.append(startOfDay(for: date))
         }
@@ -312,15 +318,23 @@ func formatDateTo24HourTime(date: Date?) -> String {
     }
 }
 
-func getDisplayColorByCompletion(for percentageCompleted: CGFloat) -> Color {
-    if percentageCompleted < 0.3 {
-        return Color.red
-    } else if percentageCompleted < 0.6 {
-        return Color.orange
-    } else if percentageCompleted < 0.9 {
-        return Color.yellow
-    } else {
-        return Color.green
+func getDisplayColorByCompletion(totalTasks: Int, completedTasks: Int) -> Color {
+    
+    if totalTasks > 0{
+        let percentageCompleted: CGFloat = CGFloat(completedTasks) / CGFloat(totalTasks)
+        
+        if percentageCompleted < 0.3 {
+            return Color.red
+        } else if percentageCompleted < 0.6 {
+            return Color.orange
+        } else if percentageCompleted < 0.9 {
+            return Color.yellow
+        } else {
+            return Color.green
+        }
+        
+    } else{
+        return Color.gray
     }
 }
 

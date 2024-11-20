@@ -103,6 +103,10 @@ struct CalendarView: View {
                 .onAppear(){
                     selectToday()
                 }
+                .refreshable {
+                    print("Refreshing")
+                    taskManager.fetchTasks() // Fetch tasks when pulled down
+                }
                 
             }
             .blur(radius: showPopup ? 3 : 0)
@@ -290,21 +294,7 @@ struct CalendarView: View {
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.15), radius: 3, x: 0, y: 0) // Inner shadow effect
         .clipShape(RoundedRectangle(cornerRadius: 10))
-        
-//        return LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 10) {
-//            ForEach(days.indices, id: \.self) { index in
-//                if let day = days[index] {
-//                    dayCircle(for: day)
-//                } else {
-//                    emptyDayCircle
-//                }
-//            }
-//        }
-//        .padding()
-//        .background(Color.gray.opacity(0.15))
-//        .cornerRadius(10)
-//        .shadow(color: Color.black.opacity(0.15), radius: 3, x: 0, y: 0) // Inner shadow effect
-//        .clipShape(RoundedRectangle(cornerRadius: 10))
+    
     }
 
     private var emptyDayCircle: some View {
@@ -322,11 +312,11 @@ struct CalendarView: View {
                 let totalTasks = tasks.count
                 let completedTasks = tasks.filter { $0.participantsStatus[currentUserID] ?? false }.count
                 
-                let percentageCompleted: CGFloat = CGFloat(completedTasks)/CGFloat(totalTasks)
-                let printPercentageCompleted: Int = Int(percentageCompleted*100)
+                let percentageCompleted: CGFloat = totalTasks > 0 ? CGFloat(completedTasks) / CGFloat(totalTasks) : 0
+                let printPercentageCompleted: Int = totalTasks > 0 ? Int(percentageCompleted * 100) : 0
                 let numTasksLeft: Int = totalTasks - completedTasks
                 
-                let displayColor: Color = getDisplayColorByCompletion(for: percentageCompleted)
+                let displayColor: Color = getDisplayColorByCompletion(totalTasks: totalTasks, completedTasks: completedTasks)
                 
                 return ZStack{
                     Circle()

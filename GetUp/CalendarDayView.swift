@@ -30,7 +30,11 @@ struct CalendarDayView: View {
         let printPercentageCompleted: Int = totalTasks > 0 ? Int(percentageCompleted * 100) : 0
         let numTasksLeft: Int = totalTasks - completedTasks
         
-        let displayColor: Color = getDisplayColorByCompletion(for: percentageCompleted)
+        let displayColor: Color = getDisplayColorByCompletion(totalTasks: totalTasks, completedTasks: completedTasks)
+        
+        let titleText = totalTasks > 0 ? String(printPercentageCompleted)+"%" : "–"
+        let subtitleText = totalTasks > 0 ? (
+            (totalTasks-completedTasks == 0) ? "\(totalTasks) tasks done!" : String(numTasksLeft)+"/\(totalTasks) tasks left") : "No tasks yet"
         
         if isPast || isFuture {
             if isPast{
@@ -39,7 +43,7 @@ struct CalendarDayView: View {
                     HStack{
                         ZStack{
                             Circle()
-                                .stroke(Color.gray.opacity(0.6), lineWidth: 8)
+                                .stroke(displayColor.opacity(0.4), lineWidth: 8)
                                 .frame(width: circleSize, height: circleSize)
                             
                             Circle()
@@ -52,11 +56,11 @@ struct CalendarDayView: View {
                         
                         if isSelected{
                             VStack(alignment: .leading){
-                                Text(String(printPercentageCompleted)+"%")
+                                Text(titleText)
                                     .font(.system(size: 18))
                                     .fontWeight(.heavy)
                                     .foregroundStyle(isSelected ? displayColor : Color.white)
-                                Text((totalTasks-completedTasks == 0) ? "\(totalTasks) tasks done!" : String(numTasksLeft)+"/\(totalTasks) tasks left")
+                                Text(subtitleText)
                                     .font(.system(size: 14))
                                     .fontWeight(.semibold)
                                     .foregroundStyle(isSelected ? displayColor : Color.white)
@@ -90,8 +94,7 @@ struct CalendarDayView: View {
                 VStack (alignment:.center,spacing:5){
                     ZStack{
                         Circle()
-                            .stroke(Color.gray.opacity(0.6), lineWidth: 8)
-                        
+                            .stroke(displayColor.opacity(0.4), lineWidth: 8)
                             .frame(width: circleSize, height: circleSize)
                         
                         Circle()
@@ -129,8 +132,7 @@ struct CalendarDayView: View {
                 HStack{
                     ZStack{
                         Circle()
-                            .stroke(Color.gray.opacity(0.6), lineWidth: 8)
-                        
+                            .stroke(displayColor.opacity(0.4), lineWidth: 8)
                             .frame(width: circleSize, height: circleSize)
                         
                         Circle()
@@ -142,11 +144,11 @@ struct CalendarDayView: View {
                     .padding(10)
                     
                     VStack(alignment: .leading){
-                        Text(String(printPercentageCompleted)+"%")
+                        Text(titleText)
                             .font(.system(size: 18))
                             .fontWeight(.heavy)
                             .foregroundStyle(isSelected ? displayColor : Color.white)
-                        Text((totalTasks-completedTasks == 0) ? "\(totalTasks) tasks done!" : String(numTasksLeft)+"/\(totalTasks) tasks left")
+                        Text(subtitleText)
                             .font(.system(size: 14))
                             .fontWeight(.semibold)
                             .foregroundStyle(isSelected ? displayColor : Color.white)

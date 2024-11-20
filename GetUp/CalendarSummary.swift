@@ -38,7 +38,7 @@ struct CalendarSummary: View {
         let totalTasks = totalTaskList.count
         let completionPercentage = totalTasks > 0 ? CGFloat(completedTasks) / CGFloat(totalTasks) : 0
         
-        let displayColor: Color = getDisplayColorByCompletion(for: completionPercentage)
+        let displayColor: Color = getDisplayColorByCompletion(totalTasks: totalTasks, completedTasks: completedTasks)
         
         return AnyView(
             HStack (spacing:20){
@@ -91,7 +91,7 @@ struct ConcentricCircleView: View {
                 
                 ZStack{
                     Circle()
-                        .stroke(totalTasks > 0 ? color.opacity(0.4) : color.opacity(0.05), style: StrokeStyle(lineWidth: circleThickness, lineCap: .round))
+                        .stroke(totalTasks > 0 ? color.opacity(0.3) : color.opacity(0.05), style: StrokeStyle(lineWidth: circleThickness, lineCap: .round))
                         .rotationEffect(.degrees(-90)) // Rotate to start from top
                         .frame(width: calculateSize(index), height: calculateSize(index))
                     
