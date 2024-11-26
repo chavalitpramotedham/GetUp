@@ -151,7 +151,7 @@ struct TaskListView: View {
                     
                     taskInputPicker
                         .position(
-                            x: screenWidth - 125, // Flush right alignment
+                            x: screenWidth - 122, // Flush right alignment
                             y: taskInputButtonFrame.maxY + 65 // Positioned below the button
                         ) // Position popup directly below the button
                 }
@@ -342,7 +342,7 @@ struct TaskListView: View {
                 .fill(Color.black)
                 .shadow(radius: 10)
         )
-        .frame(width: 170) // Adjust width as needed
+        .frame(width: 165) // Adjust width as needed
     }
     
     private func resetPopupFields() {
