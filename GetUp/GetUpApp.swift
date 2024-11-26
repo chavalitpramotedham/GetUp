@@ -32,8 +32,8 @@ let nameDict: [Int: String] = [
 ]
 
 /// USER Variables:
-var currentUserName = ""
-var currentUserID = ""
+var currentUserID = "987"
+var currentUserName = "Default"
 var connectionsList: [String] = []
 
 //var currentUserID = "123"
@@ -55,8 +55,12 @@ let userDB: [String:[String:[String]]] = [
     ]
 ]
 
+let env = EnvReader()
 
-class TaskObject: ObservableObject, Identifiable, Equatable{
+var numPastFutureDates: Int = 90
+
+
+class TaskObject: ObservableObject, Identifiable, Equatable, Decodable{
     @Published var taskID: String
     @Published var name: String
     @Published var description: String
@@ -82,8 +86,43 @@ class TaskObject: ObservableObject, Identifiable, Equatable{
         self.participantsStatus = participantsStatus
     }
     
+    // Conformance to Decodable
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        // Decode each property
+        self.taskID = try container.decode(String.self, forKey: .taskID)
+        self.name = try container.decode(String.self, forKey: .name)
+        self.description = try container.decode(String.self, forKey: .description)
+        self.colorIndex = try container.decode(Int.self, forKey: .colorIndex)
+        self.timerSet = try container.decode(Bool.self, forKey: .timerSet)
+        self.creatorID = try container.decode(String.self, forKey: .creatorID)
+        self.participantsStatus = try container.decode([String: Bool].self, forKey: .participantsStatus)
+
+        // Decode `taskDate` safely (as it’s optional)
+        if let timestamp = try? container.decodeIfPresent(Timestamp.self, forKey: .taskDate) {
+            self.taskDate = timestamp.dateValue() // Convert Firebase Timestamp to Date
+        } else if let date = try? container.decodeIfPresent(Date.self, forKey: .taskDate) {
+            self.taskDate = date
+        } else {
+            self.taskDate = nil
+        }
+    }
+
+    // Keys for Coding
+    enum CodingKeys: String, CodingKey {
+        case taskID
+        case name
+        case description
+        case colorIndex
+        case taskDate
+        case timerSet
+        case creatorID
+        case participantsStatus
+    }
+    
     static func == (lhs: TaskObject, rhs: TaskObject) -> Bool {
-        lhs.id == rhs.id &&
+//        lhs.id == rhs.id &&
         lhs.taskID == rhs.taskID &&
         lhs.name == rhs.name &&
         lhs.description == rhs.description &&
@@ -140,6 +179,22 @@ class TaskObject: ObservableObject, Identifiable, Equatable{
             creatorID: creatorID,
             participantsStatus: participantsStatus
         )
+    }
+    
+    func printFields() {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .medium
+        dateFormatter.timeStyle = .short
+
+        print("Task Details:")
+        print("Task ID: \(taskID)")
+        print("Name: \(name)")
+        print("Description: \(description)")
+        print("Color Index: \(colorIndex)")
+        print("Task Date: \(taskDate != nil ? dateFormatter.string(from: taskDate!) : "No date set")")
+        print("Timer Set: \(timerSet ? "Yes" : "No")")
+        print("Creator ID: \(creatorID)")
+        print("Participants Status: \(participantsStatus.map { "\($0.key): \($0.value ? "Done" : "Pending")" }.joined(separator: ", "))")
     }
 }
 
@@ -205,23 +260,159 @@ class FirestoreManager {
 }
 
 
+
+class TaskManager: ObservableObject {
+    private var rawTaskList: [TaskObject] = getRawTastList()
+    @Published var taskListsByDate: [Date: [TaskObject]]?
+    
+    @Published var pastDates: [Date] = getPastDays(numPastFutureDates)
+    @Published var todayDates: [Date] = getToday()
+    @Published var futureDates: [Date] = getFutureDays(numPastFutureDates)
+    @Published var combinedDates: [Date]?
+    
+    private var firestoreManager = FirestoreManager()
+    
+    init() {
+        
+        self.combinedDates = pastDates + todayDates + futureDates
+        
+        fetchTasks()
+    }
+    
+    func fetchTasks() {
+        firestoreManager.fetchTasks { [weak self] fetchedTasks, error in
+            if let error = error {
+                print("Error fetching tasks: \(error.localizedDescription)")
+            } else if let fetchedTasks = fetchedTasks {
+                DispatchQueue.main.async {
+                    self?.rawTaskList = fetchedTasks
+                    
+                    self?.taskListsByDate = createTaskListsByDate(tasks: self?.rawTaskList ?? [], dateList: self?.combinedDates ?? [])
+                }
+            }
+        }
+    }
+
+    // Method to update `taskListsByDate` after modifying `selectedTaskList`
+    func updateTaskList(for date: Date, with tasks: [TaskObject]) {
+        taskListsByDate?[date] = tasks
+        rawTaskList = taskListsByDate?.flatMap { $0.value } ?? []
+    }
+    
+    func saveTaskToDB(_ task: TaskObject) {
+        firestoreManager.saveTask(task) { error in
+            if let error = error {
+                print("Error saving task: \(error.localizedDescription)")
+            } else {
+                print("Task successfully saved!")
+            }
+        }
+    }
+    
+    func saveMultipleTasksToDB(_ tasks: [TaskObject]) {
+        for task in tasks{
+            firestoreManager.saveTask(task) { error in
+                if let error = error {
+                    print("Error saving task: \(error.localizedDescription)")
+                } else {
+                    print("Task successfully saved!")
+                }
+            }
+        }
+    }
+    
+    func updateTaskToDB(_ task: TaskObject){
+        firestoreManager.updateTask(task) { error in
+            if let error = error {
+                print("Error updating task: \(error.localizedDescription)")
+            } else {
+                print("Task successfully updated!")
+            }
+        }
+    }
+    
+    func removeTaskFromDB(_ task: TaskObject){
+        firestoreManager.deleteTask(task) { error in
+            if let error = error {
+                print("Error deleting task: \(error.localizedDescription)")
+            } else {
+                print("Task successfully deleted!")
+            }
+        }
+    }
+}
+
+class EnvReader {
+    private var variables: [String: String] = [:]
+
+    init(fileName: String = ".env") {
+        print("Initializing EnvReader")
+        if let filePath = Bundle.main.path(forResource: fileName, ofType: nil) {
+            print("File path: \(filePath)")
+            do {
+                let contents = try String(contentsOfFile: filePath, encoding: .utf8)
+                parseEnv(contents)
+            } catch {
+                print("Error reading .env file: \(error)")
+            }
+        } else {
+            print(".env file not found in the bundle.")
+        }
+    }
+
+    private func parseEnv(_ contents: String) {
+        
+        print("Parsing")
+        let lines = contents.split(separator: "\n")
+        for line in lines {
+            // Ignore comments and empty lines
+            guard !line.starts(with: "#"), !line.trimmingCharacters(in: .whitespaces).isEmpty else {
+                continue
+            }
+            // Split the line into key-value pairs
+            let keyValue = line.split(separator: "=", maxSplits: 1)
+            if keyValue.count == 2 {
+                let key = String(keyValue[0]).trimmingCharacters(in: .whitespaces)
+                let value = String(keyValue[1]).trimmingCharacters(in: .whitespaces)
+                variables[key] = value
+            }
+        }
+    }
+
+    func get(_ key: String, default defaultValue: String = "") -> String {
+        return variables[key] ?? defaultValue
+    }
+}
+
+
 struct ContentView: View {
+    @StateObject private var taskManager: TaskManager
+    
+    init(){
+        let manager = TaskManager()
+        _taskManager = StateObject(wrappedValue: manager)
+    }
+    
     var body: some View {
         NavigationStack {
-            WelcomeView()
+            WelcomeView(taskManager: taskManager)
         }
     }
 }
 
 @main
 struct GetUpApp: App {
+    
+    
     init() {
         FirebaseApp.configure()
+        print(env.get("OPENAI_API_KEY") ?? "API_KEY not found")
     }
 //    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     
     var body: some Scene {
         WindowGroup {
+//            DictationView()
             ContentView()
         }
     }
@@ -239,6 +430,38 @@ func setUID(_ uid:String){
     connectionsList = userDB[currentUserID]?["connections"] ?? []
 }
 
+func getTaskListByDate(_ date: Date) -> [TaskObject] {
+    let numTasks = Int.random(in:5...20)
+    var taskList: [TaskObject] = []
+    
+    let keys = Array(userDB.keys)
+    
+    for i in 1...numTasks {
+        
+        var randomParticipantStatusDict: [String: Bool] = [:]
+        
+        // Shuffle the keys and take the desired number of keys
+        let selectedKeys = keys.shuffled().prefix(Int.random(in:0...1))
+        
+        // Assign a random Bool to each selected key
+        for key in selectedKeys {
+            randomParticipantStatusDict[key] = Bool.random()
+        }
+        
+        let task = TaskObject(
+            name: "Task \(i)",
+            description: "long text long text long text long text long text long text long text long text long text long text long text long text",
+            colorIndex: Int.random(in:0...(colorDict.count-1)),
+            taskDate: randomTimeOnDate(date),
+            timerSet: Bool.random(),
+            creatorID: currentUserID,
+            participantsStatus: randomParticipantStatusDict
+        )
+        taskList.append(task)
+    }
+    
+    return taskList
+}
 
 #Preview {
     ContentView()

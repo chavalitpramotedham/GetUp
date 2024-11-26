@@ -34,9 +34,22 @@
 		2B0DD8D02CE3D45B0062199A /* GetUpUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GetUpUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		2BFE12952CF5A27500E73B49 /* Exceptions for "GetUp" folder in "GetUp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 2B0DD8B52CE3D4580062199A /* GetUp */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		2B0DD8B82CE3D4580062199A /* GetUp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				2BFE12952CF5A27500E73B49 /* Exceptions for "GetUp" folder in "GetUp" target */,
+			);
 			path = GetUp;
 			sourceTree = "<group>";
 		};
@@ -127,11 +140,6 @@
 			);
 			name = GetUp;
 			packageProductDependencies = (
-				2B67E5C42CED7B1D00DC1AA0 /* FirebaseAnalytics */,
-				2B67E5C62CED7B1D00DC1AA0 /* FirebaseAnalyticsOnDeviceConversion */,
-				2B67E5C82CED7B1D00DC1AA0 /* FirebaseAnalyticsWithoutAdIdSupport */,
-				2B67E5CA2CED7B1D00DC1AA0 /* FirebaseAppCheck */,
-				2B67E5CC2CED7B1D00DC1AA0 /* FirebaseAppDistribution-Beta */,
 				2B67E5F22CED7EA400DC1AA0 /* FirebaseFirestore */,
 				2B67E5F42CED7FA600DC1AA0 /* FirebaseCore */,
 			);
@@ -418,17 +426,22 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GetUp/Preview Content\"";
 				DEVELOPMENT_TEAM = 826W65V7Z6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GetUp/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to the microphone for dictation.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "We need access to the microphone for dictation.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -447,17 +460,22 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GetUp/Preview Content\"";
 				DEVELOPMENT_TEAM = 826W65V7Z6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GetUp/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to the microphone for dictation.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "We need access to the microphone for dictation.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -592,31 +610,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		2B67E5C42CED7B1D00DC1AA0 /* FirebaseAnalytics */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2B67E5C32CED7B1D00DC1AA0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseAnalytics;
-		};
-		2B67E5C62CED7B1D00DC1AA0 /* FirebaseAnalyticsOnDeviceConversion */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2B67E5C32CED7B1D00DC1AA0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseAnalyticsOnDeviceConversion;
-		};
-		2B67E5C82CED7B1D00DC1AA0 /* FirebaseAnalyticsWithoutAdIdSupport */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2B67E5C32CED7B1D00DC1AA0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseAnalyticsWithoutAdIdSupport;
-		};
-		2B67E5CA2CED7B1D00DC1AA0 /* FirebaseAppCheck */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2B67E5C32CED7B1D00DC1AA0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseAppCheck;
-		};
-		2B67E5CC2CED7B1D00DC1AA0 /* FirebaseAppDistribution-Beta */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2B67E5C32CED7B1D00DC1AA0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = "FirebaseAppDistribution-Beta";
-		};
 		2B67E5F22CED7EA400DC1AA0 /* FirebaseFirestore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 2B67E5C32CED7B1D00DC1AA0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

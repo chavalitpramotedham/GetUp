@@ -8,8 +8,14 @@
 import SwiftUI
 
 struct WelcomeView: View {
+    @ObservedObject var taskManager: TaskManager
+    
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height
+    
+    init(taskManager: TaskManager) {
+        self.taskManager = taskManager
+    }
     
     var body: some View {
         ZStack{
@@ -37,17 +43,14 @@ struct WelcomeView: View {
                 
                 Spacer()
                 
-                UserSelectionView()
+                UserSelectionView
             }
 //            .offset(y:screenWidth/2)
             .padding(50)
         }
     }
-}
-
-struct UserSelectionView: View {
     
-    var body: some View {
+    private var UserSelectionView: some View {
         HStack(alignment: .top){
             Spacer()
             
@@ -83,7 +86,7 @@ struct UserSelectionView: View {
                         }
                     }
                 } else{
-                    NavigationLink(destination: MainPageView()) {
+                    NavigationLink(destination: MainPageView(taskManager: taskManager)) {
                         VStack(spacing: 20) {
                             Image(profilePicture)
                                 .resizable()
@@ -114,7 +117,7 @@ struct UserSelectionView: View {
         .padding(.top,10)
     }
 }
-
-#Preview {
-    WelcomeView()
-}
+//
+//#Preview {
+//    WelcomeView()
+//}

@@ -9,154 +9,22 @@ import SwiftUI
 import Foundation
 import Combine
 
-import FirebaseCore
-import FirebaseFirestore
 
-var numPastFutureDates: Int = 90
-
-class TaskManager: ObservableObject {
-    private var rawTaskList: [TaskObject] = getRawTastList()
-    @Published var taskListsByDate: [Date: [TaskObject]]?
-    
-    @Published var pastDates: [Date] = getPastDays(numPastFutureDates)
-    @Published var todayDates: [Date] = getToday()
-    @Published var futureDates: [Date] = getFutureDays(numPastFutureDates)
-    @Published var combinedDates: [Date]?
-    
-    private var firestoreManager = FirestoreManager()
-    
-    init() {
-        
-        self.combinedDates = pastDates + todayDates + futureDates
-        
-        fetchTasks()
-        
-//        firestoreManager.fetchTasks { [weak self] tasks, error in
-//            if let error = error {
-//                print("Error fetching tasks: \(error.localizedDescription)")
-//            } else if let tasks = tasks {
-//                DispatchQueue.main.async {
-//                    print("Successfully fetched tasks!")
-//                    print(tasks)
-//                    self?.rawTaskList = tasks // Update the list on the main thread
-//                    
-//                    if let combinedDates = self?.combinedDates {
-//                        self?.taskListsByDate = createTaskListsByDate(tasks: self?.rawTaskList ?? [], dateList: combinedDates)
-//                    }
-//                }
-//            }
-//        }
-    }
-    
-    func fetchTasks() {
-        firestoreManager.fetchTasks { [weak self] fetchedTasks, error in
-            if let error = error {
-                print("Error fetching tasks: \(error.localizedDescription)")
-            } else if let fetchedTasks = fetchedTasks {
-                DispatchQueue.main.async {
-                    self?.rawTaskList = fetchedTasks
-                    
-                    self?.taskListsByDate = createTaskListsByDate(tasks: self?.rawTaskList ?? [], dateList: self?.combinedDates ?? [])
-                }
-            }
-        }
-    }
-
-    // Method to update `taskListsByDate` after modifying `selectedTaskList`
-    func updateTaskList(for date: Date, with tasks: [TaskObject]) {
-        taskListsByDate?[date] = tasks
-        rawTaskList = taskListsByDate?.flatMap { $0.value } ?? []
-    }
-    
-    func saveTaskToDB(_ task: TaskObject) {
-        firestoreManager.saveTask(task) { error in
-            if let error = error {
-                print("Error saving task: \(error.localizedDescription)")
-            } else {
-                print("Task successfully saved!")
-            }
-        }
-    }
-    
-    func updateTaskToDB(_ task: TaskObject){
-        firestoreManager.updateTask(task) { error in
-            if let error = error {
-                print("Error updating task: \(error.localizedDescription)")
-            } else {
-                print("Task successfully updated!")
-            }
-        }
-    }
-    
-    func removeTaskFromDB(_ task: TaskObject){
-        firestoreManager.deleteTask(task) { error in
-            if let error = error {
-                print("Error deleting task: \(error.localizedDescription)")
-            } else {
-                print("Task successfully deleted!")
-            }
-        }
-    }
-}
 
 class ScrollViewProxyHolder: ObservableObject {
     var proxy: ScrollViewProxy?
 }
 
-// Function to get Dummy Data
-
-func getTaskListByDate(_ date: Date) -> [TaskObject] {
-    let numTasks = Int.random(in:5...20)
-    var taskList: [TaskObject] = []
-    
-    let keys = Array(userDB.keys)
-    
-    for i in 1...numTasks {
-        
-        var randomParticipantStatusDict: [String: Bool] = [:]
-        
-        // Shuffle the keys and take the desired number of keys
-        let selectedKeys = keys.shuffled().prefix(Int.random(in:0...1))
-        
-        // Assign a random Bool to each selected key
-        for key in selectedKeys {
-            randomParticipantStatusDict[key] = Bool.random()
-        }
-        
-        let task = TaskObject(
-            name: "Task \(i)",
-            description: "long text long text long text long text long text long text long text long text long text long text long text long text",
-            colorIndex: Int.random(in:0...(colorDict.count-1)),
-            taskDate: randomTimeOnDate(date),
-            timerSet: Bool.random(),
-            creatorID: currentUserID,
-            participantsStatus: randomParticipantStatusDict
-        )
-        taskList.append(task)
-    }
-    
-    return taskList
-}
-
-
-
 struct MainPageView: View {
     
-//    @State private var selectedCardIndex: Int
-//    @State private var selectedDate: Date
-//    @State private var selectedTaskList: [TaskObject]
-    
-    @StateObject private var taskManager: TaskManager
+    @ObservedObject var taskManager: TaskManager
     @StateObject private var proxyHolder = ScrollViewProxyHolder()
     
     @State private var selectedBottomTab: Int
     
-    init() {
-        
-        let manager = TaskManager()
-        _taskManager = StateObject(wrappedValue: manager)
+    init(taskManager: TaskManager) {
+        self.taskManager = taskManager
         _selectedBottomTab = State(initialValue: startingScreenIndex)
-        
     }
     
     var body: some View {
@@ -178,15 +46,12 @@ struct MainPageView: View {
                 case 1:
                     CalendarView(taskManager: taskManager)
                 case 2:
-                    Text("Social Tab")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.green)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    Text("Social View <WIP>")
 
                 case 3:
-                    UserSelectionView()
-                        .padding(.horizontal,30)
+                    Text("Profile View <WIP>")
+//                    UserSelectionView()
+//                        .padding(.horizontal,30)
 
                 default:
                     Text("Invalid Tab")
@@ -346,9 +211,9 @@ func getOtherUsername(from uid: String) -> String{
     return userDB[uid]?["userName"]?[0] ?? ""
 }
 
-#Preview{
-    MainPageView()
-}
+//#Preview{
+//    MainPageView()
+//}
                                 
 //struct ContentView_Previews: PreviewProvider {
 //    static var previews: some View {

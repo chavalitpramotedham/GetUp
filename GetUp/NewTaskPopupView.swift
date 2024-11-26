@@ -185,7 +185,7 @@ struct NewTaskPopupView: View {
                     }
                 )
                 .frame(width:50)
-                .frame(maxHeight:.infinity)
+                .frame(maxHeight:55)
                 .background(
                     RoundedRectangle(cornerRadius: 10)
                         .fill(.red)
