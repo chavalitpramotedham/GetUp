@@ -9,6 +9,10 @@
 /* Begin PBXBuildFile section */
 		2B67E5F32CED7EA400DC1AA0 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B67E5F22CED7EA400DC1AA0 /* FirebaseFirestore */; };
 		2B67E5F52CED7FA600DC1AA0 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B67E5F42CED7FA600DC1AA0 /* FirebaseCore */; };
+		2BE9997D2CF709ED0009FE44 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE9997C2CF709ED0009FE44 /* FirebaseMessaging */; };
+		2BE999842CF70CAD0009FE44 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BE999832CF70CAD0009FE44 /* WidgetKit.framework */; };
+		2BE999862CF70CAD0009FE44 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BE999852CF70CAD0009FE44 /* SwiftUI.framework */; };
+		2BE999972CF70CB00009FE44 /* GetUpWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2BE999822CF70CAD0009FE44 /* GetUpWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -26,15 +30,47 @@
 			remoteGlobalIDString = 2B0DD8B52CE3D4580062199A;
 			remoteInfo = GetUp;
 		};
+		2BE999952CF70CB00009FE44 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2B0DD8AE2CE3D4580062199A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2BE999812CF70CAD0009FE44;
+			remoteInfo = GetUpWidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2BE9999C2CF70CB00009FE44 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				2BE999972CF70CB00009FE44 /* GetUpWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		2B0DD8B62CE3D4580062199A /* GetUp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetUp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B0DD8C62CE3D45B0062199A /* GetUpTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GetUpTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B0DD8D02CE3D45B0062199A /* GetUpUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GetUpUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2BCA0F5F2CF70F6D006F4633 /* YourApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = YourApp.entitlements; sourceTree = "<group>"; };
+		2BE999822CF70CAD0009FE44 /* GetUpWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		2BE999832CF70CAD0009FE44 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		2BE999852CF70CAD0009FE44 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		2BE9999B2CF70CB00009FE44 /* Exceptions for "GetUpWidget" folder in "GetUpWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 2BE999812CF70CAD0009FE44 /* GetUpWidgetExtension */;
+		};
 		2BFE12952CF5A27500E73B49 /* Exceptions for "GetUp" folder in "GetUp" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -63,6 +99,14 @@
 			path = GetUpUITests;
 			sourceTree = "<group>";
 		};
+		2BE999872CF70CAD0009FE44 /* GetUpWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				2BE9999B2CF70CB00009FE44 /* Exceptions for "GetUpWidget" folder in "GetUpWidgetExtension" target */,
+			);
+			path = GetUpWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,6 +114,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2BE9997D2CF709ED0009FE44 /* FirebaseMessaging in Frameworks */,
 				2B67E5F52CED7FA600DC1AA0 /* FirebaseCore in Frameworks */,
 				2B67E5F32CED7EA400DC1AA0 /* FirebaseFirestore in Frameworks */,
 			);
@@ -89,15 +134,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		2BE9997F2CF70CAD0009FE44 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2BE999862CF70CAD0009FE44 /* SwiftUI.framework in Frameworks */,
+				2BE999842CF70CAD0009FE44 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		2B0DD8AD2CE3D4580062199A = {
 			isa = PBXGroup;
 			children = (
+				2BCA0F5F2CF70F6D006F4633 /* YourApp.entitlements */,
 				2B0DD8B82CE3D4580062199A /* GetUp */,
 				2B0DD8C92CE3D45B0062199A /* GetUpTests */,
 				2B0DD8D32CE3D45B0062199A /* GetUpUITests */,
+				2BE999872CF70CAD0009FE44 /* GetUpWidget */,
 				2B67E5F12CED7EA400DC1AA0 /* Frameworks */,
 				2B0DD8B72CE3D4580062199A /* Products */,
 			);
@@ -109,6 +165,7 @@
 				2B0DD8B62CE3D4580062199A /* GetUp.app */,
 				2B0DD8C62CE3D45B0062199A /* GetUpTests.xctest */,
 				2B0DD8D02CE3D45B0062199A /* GetUpUITests.xctest */,
+				2BE999822CF70CAD0009FE44 /* GetUpWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -116,6 +173,8 @@
 		2B67E5F12CED7EA400DC1AA0 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				2BE999832CF70CAD0009FE44 /* WidgetKit.framework */,
+				2BE999852CF70CAD0009FE44 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -130,10 +189,12 @@
 				2B0DD8B22CE3D4580062199A /* Sources */,
 				2B0DD8B32CE3D4580062199A /* Frameworks */,
 				2B0DD8B42CE3D4580062199A /* Resources */,
+				2BE9999C2CF70CB00009FE44 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				2BE999962CF70CB00009FE44 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				2B0DD8B82CE3D4580062199A /* GetUp */,
@@ -142,6 +203,7 @@
 			packageProductDependencies = (
 				2B67E5F22CED7EA400DC1AA0 /* FirebaseFirestore */,
 				2B67E5F42CED7FA600DC1AA0 /* FirebaseCore */,
+				2BE9997C2CF709ED0009FE44 /* FirebaseMessaging */,
 			);
 			productName = GetUp;
 			productReference = 2B0DD8B62CE3D4580062199A /* GetUp.app */;
@@ -193,6 +255,28 @@
 			productReference = 2B0DD8D02CE3D45B0062199A /* GetUpUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		2BE999812CF70CAD0009FE44 /* GetUpWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2BE999982CF70CB00009FE44 /* Build configuration list for PBXNativeTarget "GetUpWidgetExtension" */;
+			buildPhases = (
+				2BE9997E2CF70CAD0009FE44 /* Sources */,
+				2BE9997F2CF70CAD0009FE44 /* Frameworks */,
+				2BE999802CF70CAD0009FE44 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				2BE999872CF70CAD0009FE44 /* GetUpWidget */,
+			);
+			name = GetUpWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = GetUpWidgetExtension;
+			productReference = 2BE999822CF70CAD0009FE44 /* GetUpWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -213,6 +297,9 @@
 					2B0DD8CF2CE3D45B0062199A = {
 						CreatedOnToolsVersion = 16.1;
 						TestTargetID = 2B0DD8B52CE3D4580062199A;
+					};
+					2BE999812CF70CAD0009FE44 = {
+						CreatedOnToolsVersion = 16.1;
 					};
 				};
 			};
@@ -236,6 +323,7 @@
 				2B0DD8B52CE3D4580062199A /* GetUp */,
 				2B0DD8C52CE3D45B0062199A /* GetUpTests */,
 				2B0DD8CF2CE3D45B0062199A /* GetUpUITests */,
+				2BE999812CF70CAD0009FE44 /* GetUpWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -256,6 +344,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		2B0DD8CE2CE3D45B0062199A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2BE999802CF70CAD0009FE44 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -286,6 +381,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		2BE9997E2CF70CAD0009FE44 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -298,6 +400,11 @@
 			isa = PBXTargetDependency;
 			target = 2B0DD8B52CE3D4580062199A /* GetUp */;
 			targetProxy = 2B0DD8D12CE3D45B0062199A /* PBXContainerItemProxy */;
+		};
+		2BE999962CF70CB00009FE44 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2BE999812CF70CAD0009FE44 /* GetUpWidgetExtension */;
+			targetProxy = 2BE999952CF70CB00009FE44 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -427,6 +534,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = GetUp/GetUp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GetUp/Preview Content\"";
@@ -461,6 +569,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = GetUp/GetUp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GetUp/Preview Content\"";
@@ -557,6 +666,60 @@
 			};
 			name = Release;
 		};
+		2BE999992CF70CB00009FE44 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 826W65V7Z6;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GetUpWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = GetUpWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ChavalitPramotedham.GetUp.GetUpWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		2BE9999A2CF70CB00009FE44 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 826W65V7Z6;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GetUpWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = GetUpWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ChavalitPramotedham.GetUp.GetUpWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -596,6 +759,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		2BE999982CF70CB00009FE44 /* Build configuration list for PBXNativeTarget "GetUpWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2BE999992CF70CB00009FE44 /* Debug */,
+				2BE9999A2CF70CB00009FE44 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -619,6 +791,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2B67E5C32CED7B1D00DC1AA0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCore;
+		};
+		2BE9997C2CF709ED0009FE44 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B67E5C32CED7B1D00DC1AA0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

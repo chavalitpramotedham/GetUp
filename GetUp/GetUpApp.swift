@@ -8,6 +8,8 @@
 import SwiftUI
 import FirebaseCore
 import FirebaseFirestore
+import FirebaseMessaging
+import UserNotifications
 
 // Static variables
 
@@ -32,13 +34,10 @@ let nameDict: [Int: String] = [
 ]
 
 /// USER Variables:
-var currentUserID = "987"
-var currentUserName = "Default"
-var connectionsList: [String] = []
 
-//var currentUserID = "123"
-//var currentUserName = "Chava"
-//var connectionsList: [String] = ["456"]
+var currentUserID = "123"
+var currentUserName = "Chava"
+var connectionsList: [String] = ["456"]
 
 // To be stored in DB
 let userDB: [String:[String:[String]]] = [
@@ -384,6 +383,53 @@ class EnvReader {
     }
 }
 
+class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
+    // Handle foreground notifications
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        print("Notification received in foreground: \(notification.request.content.userInfo)")
+        // Show banner, play sound, and set badge
+        completionHandler([.banner, .sound, .badge])
+    }
+
+    // Handle when the user interacts with a notification
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        print("Notification interaction: \(response.notification.request.content.userInfo)")
+        completionHandler()
+    }
+}
+
+// Call fetchAndSaveFCMToken in the AppDelegate when the APNs token is received
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        // Pass the APNs token to Firebase
+        Messaging.messaging().apnsToken = deviceToken
+
+        // Log the APNs token for debugging
+        let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
+        print("APNs Device Token: \(tokenString)")
+
+        // Now fetch and save the FCM token
+        fetchAndSaveFCMToken()
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        print("Failed to register for remote notifications: \(error.localizedDescription)")
+    }
+
+    private func fetchAndSaveFCMToken() {
+        Messaging.messaging().token { token, error in
+            if let error = error {
+                print("Error fetching FCM token: \(error.localizedDescription)")
+            } else if let token = token {
+                print("FCM Token: \(token)")
+                // Save the FCM token to Firestore or your backend
+                let userID = currentUserID // Replace with your logic to get the user ID
+                Firestore.firestore().collection("users").document(userID).setData(["fcmToken": token], merge: true)
+            }
+        }
+    }
+}
+
 
 struct ContentView: View {
     @StateObject private var taskManager: TaskManager
@@ -402,13 +448,14 @@ struct ContentView: View {
 
 @main
 struct GetUpApp: App {
-    
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     init() {
         FirebaseApp.configure()
         print(env.get("OPENAI_API_KEY") ?? "API_KEY not found")
+        
+        configureNotificationPermissions() // Request permissions and set up notifications
     }
-//    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     
     var body: some Scene {
         WindowGroup {
@@ -416,7 +463,44 @@ struct GetUpApp: App {
             ContentView()
         }
     }
+    
+    // Function to configure notifications
+    private func configureNotificationPermissions() {
+        let options: UNAuthorizationOptions = [.alert, .sound, .badge] // Include sound explicitly
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if let error = error {
+                print("Error requesting notification permissions: \(error)")
+            } else if granted {
+                print("Notification permissions granted")
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
+            } else {
+                print("Notification permissions denied")
+            }
+        }
+
+        // Set the notification delegate
+        UNUserNotificationCenter.current().delegate = NotificationDelegate()
+    }
 }
+
+extension GetUpApp {
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        // Convert device token to a string
+        let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
+        print("APNs Device Token: \(token)")
+
+        // Pass the device token to Firebase
+        Messaging.messaging().apnsToken = deviceToken
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        print("Failed to register for remote notifications: \(error.localizedDescription)")
+    }
+}
+
+
 
 func triggerHapticFeedback() {
     let impactFeedbackGenerator = UIImpactFeedbackGenerator(style: .medium)
@@ -424,10 +508,31 @@ func triggerHapticFeedback() {
     impactFeedbackGenerator.impactOccurred()
 }
 
-func setUID(_ uid:String){
+func setUID(_ uid: String) {
     currentUserID = uid
     currentUserName = userDB[currentUserID]?["userName"]?[0] ?? ""
     connectionsList = userDB[currentUserID]?["connections"] ?? []
+
+    // Fetch the FCM token
+    Messaging.messaging().token { token, error in
+        if let error = error {
+            print("Error fetching FCM token: \(error.localizedDescription)")
+        } else if let token = token {
+            print("Fetched FCM Token: \(token)")
+
+            // Write the uid:fcm pair to Firestore
+            let userRef = Firestore.firestore().collection("users").document(uid)
+            userRef.setData(["fcmToken": token], merge: true) { error in
+                if let error = error {
+                    print("Error writing FCM token to Firestore: \(error.localizedDescription)")
+                } else {
+                    print("Successfully wrote FCM token to Firestore for uid: \(uid)")
+                }
+            }
+        } else {
+            print("FCM token not available.")
+        }
+    }
 }
 
 func getTaskListByDate(_ date: Date) -> [TaskObject] {
