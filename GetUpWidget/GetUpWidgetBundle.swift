@@ -17,6 +17,7 @@ struct GetUpWidgetBundle: WidgetBundle {
 
     var body: some Widget {
         GetUpWidget()
+        GetUpLockScreenWidget()
         GetUpWidgetControl()
         GetUpWidgetLiveActivity()
     }

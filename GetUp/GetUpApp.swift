@@ -466,10 +466,12 @@ struct GetUpApp: App {
                     if newPhase == .active {
                         // Trigger widget refresh when app enters the foreground
                         WidgetCenter.shared.reloadTimelines(ofKind: "GetUpWidget")
+                        WidgetCenter.shared.reloadTimelines(ofKind: "GetUpLockScreenWidget")
                         print("Widget refreshed on app enter")
                     } else if newPhase == .background {
                         // Trigger widget refresh when app enters the background
                         WidgetCenter.shared.reloadTimelines(ofKind: "GetUpWidget")
+                        WidgetCenter.shared.reloadTimelines(ofKind: "GetUpLockScreenWidget")
                         print("Widget refreshed on app exit")
                     }
                 }

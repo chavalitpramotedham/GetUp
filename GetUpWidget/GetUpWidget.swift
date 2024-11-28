@@ -516,6 +516,33 @@ struct GetUpWidget: Widget {
     }
 }
 
+struct GetUpLockScreenWidgetEntryView: View {
+    var entry: Provider.Entry
+
+    var body: some View {
+        HStack {
+            Image(systemName: "sun.haze.fill") // Custom image
+                .resizable()
+                .scaledToFit()
+                .frame(width: 16, height: 16)
+            Text("\(Int(entry.completionPercentage*100))% Gotten Up") // Completion percentage text
+        }
+    }
+}
+
+struct GetUpLockScreenWidget: Widget {
+    let kind: String = "GetUpLockScreenWidget"
+
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
+            GetUpLockScreenWidgetEntryView(entry: entry)
+        }
+        .configurationDisplayName("Progress Tracker")
+        .description("Displays an image and a completion percentage.")
+        .supportedFamilies([.accessoryInline]) // Lock Screen widget family
+    }
+}
+
 //#Preview(as: .systemSmall) {
 //    GetUpWidget()
 //} timeline: {
