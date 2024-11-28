@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2B3B1EE02CF78679006D39FC /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B3B1EDF2CF78679006D39FC /* FirebaseCore */; };
+		2B3B1EE22CF78681006D39FC /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B3B1EE12CF78681006D39FC /* FirebaseFirestore */; };
 		2B67E5F32CED7EA400DC1AA0 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B67E5F22CED7EA400DC1AA0 /* FirebaseFirestore */; };
 		2B67E5F52CED7FA600DC1AA0 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B67E5F42CED7FA600DC1AA0 /* FirebaseCore */; };
 		2BE9997D2CF709ED0009FE44 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE9997C2CF709ED0009FE44 /* FirebaseMessaging */; };
@@ -139,6 +141,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				2BE999862CF70CAD0009FE44 /* SwiftUI.framework in Frameworks */,
+				2B3B1EE22CF78681006D39FC /* FirebaseFirestore in Frameworks */,
+				2B3B1EE02CF78679006D39FC /* FirebaseCore in Frameworks */,
 				2BE999842CF70CAD0009FE44 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -272,6 +276,8 @@
 			);
 			name = GetUpWidgetExtension;
 			packageProductDependencies = (
+				2B3B1EDF2CF78679006D39FC /* FirebaseCore */,
+				2B3B1EE12CF78681006D39FC /* FirebaseFirestore */,
 			);
 			productName = GetUpWidgetExtension;
 			productReference = 2BE999822CF70CAD0009FE44 /* GetUpWidgetExtension.appex */;
@@ -782,6 +788,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		2B3B1EDF2CF78679006D39FC /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B67E5C32CED7B1D00DC1AA0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		2B3B1EE12CF78681006D39FC /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B67E5C32CED7B1D00DC1AA0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
 		2B67E5F22CED7EA400DC1AA0 /* FirebaseFirestore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 2B67E5C32CED7B1D00DC1AA0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

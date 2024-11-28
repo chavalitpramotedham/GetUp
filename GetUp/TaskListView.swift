@@ -98,14 +98,33 @@ struct TaskListView: View {
                     }
                     .frame(maxWidth:.infinity, maxHeight:50)
                     
+                    taskListForSelectedTab
                     
-                    ScrollView {
-                        VStack(spacing: 10) {
-                            taskListForSelectedTab
-                        }
-                    }
-                    .frame(maxWidth:.infinity,maxHeight:.infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+//                    ScrollView {
+//                        VStack(spacing: 10) {
+//                            taskListForSelectedTab
+//                        }
+//                    }
+//                    .frame(maxWidth:.infinity,maxHeight:.infinity)
+//                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    
+//                    if myTaskList.count > 0{
+//                        ScrollView {
+//                            VStack(spacing: 10) {
+//                                taskListForSelectedTab
+//                            }
+//                        }
+//                        .frame(maxWidth:.infinity,maxHeight:.infinity)
+//                        .clipShape(RoundedRectangle(cornerRadius: 10))
+//                    } else {
+//                        Spacer()
+//                        Image("fallback")
+//                            .scaledToFit()
+//                            .scaleEffect(0.75)
+//                            .frame(width:75,height:75)
+//                        Spacer()
+//                    }
+                    
                     
                 }
                 .padding([.leading,.trailing,.bottom],10)
@@ -375,15 +394,70 @@ struct TaskListView: View {
         Group {
             let filteredList = colorFilter == -1 ? myTaskList : myTaskList.filter { $0.colorIndex == colorFilter }
             if selectedTab == .all {
-                ForEach(filteredList) { task in
-                    TaskCardView(taskManager: taskManager, taskObject: task, onEdit: { onEdit(task) })
+                if filteredList.count > 0{
+                    ScrollView {
+                        VStack(spacing: 10) {
+                            ForEach(filteredList) { task in
+                                TaskCardView(taskManager: taskManager, taskObject: task, onEdit: { onEdit(task) })
+                            }
+                        }
+                    }
+                    .frame(maxWidth:.infinity,maxHeight:.infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    
+//                    ForEach(filteredList) { task in
+//                        TaskCardView(taskManager: taskManager, taskObject: task, onEdit: { onEdit(task) })
+//                    }
+                } else{
+                    fallbackScreen
                 }
             } else {
-                ForEach(filteredList.filter { !($0.participantsStatus[currentUserID] ?? false) }) { task in
-                    TaskCardView(taskManager: taskManager, taskObject: task, onEdit: { onEdit(task) })
+                let leftFilteredList = filteredList.filter { !($0.participantsStatus[currentUserID] ?? false) }
+
+                if leftFilteredList.count > 0{
+                    ScrollView {
+                        VStack(spacing: 10) {
+                            ForEach(leftFilteredList) { task in
+                                TaskCardView(taskManager: taskManager, taskObject: task, onEdit: { onEdit(task) })
+                            }
+                        }
+                    }
+                    .frame(maxWidth:.infinity,maxHeight:.infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    
+//                    ForEach(leftFilteredList.filter { !($0.participantsStatus[currentUserID] ?? false) }) { task in
+//                        TaskCardView(taskManager: taskManager, taskObject: task, onEdit: { onEdit(task) })
+//                    }
+                } else{
+                    fallbackScreen
                 }
             }
         }
+    }
+    
+    private var fallbackScreen: some View{
+        VStack(alignment:.center){
+            Spacer()
+            Image("fallback")
+                .scaledToFit()
+                .scaleEffect(0.6)
+                .frame(width:215,height:215)
+            
+            VStack(alignment:.center,spacing:5){
+                Text("Nothing to do")
+                    .font(.largeTitle)
+                    .fontWeight(.heavy)
+                    .foregroundStyle(.black)
+                    .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 0)
+                Text("Have a Great Day!")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.black)
+                    .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 0)
+            }
+            Spacer()
+        }
+        .frame(maxWidth:.infinity,maxHeight:.infinity)
     }
                     
     func DateTimeToString(from date: Date?) -> String {

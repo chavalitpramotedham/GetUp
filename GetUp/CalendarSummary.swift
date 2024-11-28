@@ -18,8 +18,24 @@ struct CalendarSummary: View {
             // Overall Completion Chart
             
             overallCompletionChart()
-                .padding(.horizontal,20)
+                .padding(.horizontal,25)
+            
+            HStack(spacing:15){
+                Rectangle()
+                    .fill(.gray.opacity(0.3))
+                    .frame(maxWidth:.infinity,maxHeight: 1)
                 
+                Text("Categories")
+                    .font(.system(size: 12))
+                    .foregroundColor(.gray)
+                    .fontWeight(.semibold)
+                
+                Rectangle()
+                    .fill(.gray.opacity(0.3))
+                    .frame(maxWidth:.infinity,maxHeight: 1)
+            }
+            .padding(.horizontal,25)
+            .padding(.top,15)
             
             HStack(spacing:0){
                 ConcentricCircleView(taskList: totalTaskList)
@@ -27,7 +43,7 @@ struct CalendarSummary: View {
             }
             .padding(.horizontal,-10)
         }
-        .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 0)
+        .shadow(color: Color.black.opacity(0.15), radius: 0.5, x: 0, y: 0)
     }
     
     
@@ -41,33 +57,48 @@ struct CalendarSummary: View {
         let displayColor: Color = getDisplayColorByCompletion(totalTasks: totalTasks, completedTasks: completedTasks)
         
         return AnyView(
-            HStack (spacing:20){
-                if totalTasks == 0{
-                    Text("No Tasks Yet")
-                        .font(.system(size: 30))
-                        .foregroundColor(.black)
-                        .fontWeight(.bold)
-                }else{
-                    Text("\(Int(completionPercentage * 100))%")
-                        .font(.system(size: 30))
-                        .foregroundColor(displayColor)
-                        .fontWeight(.heavy)
-                        .frame(width:90, alignment:.trailing)
-                    
-                    VStack {
-                        ProgressView(value: completionPercentage)
-                            .progressViewStyle(LinearProgressViewStyle(tint: displayColor))
-                            .scaleEffect(x: 1, y: 9, anchor: .center)
-                            .overlay(
-                                HStack{
-                                    Text("\(completedTasks)/\(totalTasks) done")
-                                        .font(.system(size: 20))
-                                        .foregroundColor(.white)
-                                        .fontWeight(.bold)
-                                }
-                                
-                            )
+            HStack (alignment:.center, spacing:20){
+                let profilePicture = userDB[currentUserID]?["profilePicture"]?[0] ?? "person"
+                
+                Image(profilePicture)
+                    .resizable()
+                    .scaledToFill()
+                    .scaleEffect(1.5)
+                    .frame(width: 45, height: 45)
+                    .clipShape(Circle()) // Make the image circular
+                    .overlay(
+                        Circle()
+                            .stroke(Color.black, lineWidth: 0.5) // Add a black outline
+                    )
+                    .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
+                
+                VStack (spacing:10){
+                    HStack (alignment:.bottom){
+                        if totalTasks == 0{
+                            Text("No Tasks Yet")
+                                .font(.system(size: 24))
+                                .foregroundColor(.black)
+                                .fontWeight(.bold)
+                            
+                            Spacer()
+                        }else{
+                            Text("\(Int(completionPercentage * 100))%")
+                                .font(.system(size: 24))
+                                .foregroundColor(.black)
+                                .fontWeight(.heavy)
+                            
+                            Spacer()
+                            
+                            Text("\(completedTasks)/\(totalTasks) Done")
+                                .font(.system(size: 16))
+                                .foregroundColor(.gray)
+                                .fontWeight(.semibold)
+                        }
                     }
+                    
+                    ProgressView(value: completionPercentage)
+                        .progressViewStyle(LinearProgressViewStyle(tint: displayColor))
+                        .scaleEffect(x: 1, y: 2, anchor: .center)
                 }
             }
         )
@@ -153,7 +184,6 @@ struct CategoryCompletionChart: View {
                 }
             }
         }
-//        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
     }
 }

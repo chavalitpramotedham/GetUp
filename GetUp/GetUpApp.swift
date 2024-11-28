@@ -10,6 +10,7 @@ import FirebaseCore
 import FirebaseFirestore
 import FirebaseMessaging
 import UserNotifications
+import WidgetKit
 
 // Static variables
 
@@ -261,7 +262,7 @@ class FirestoreManager {
 
 
 class TaskManager: ObservableObject {
-    private var rawTaskList: [TaskObject] = getRawTastList()
+    private var rawTaskList: [TaskObject] = []
     @Published var taskListsByDate: [Date: [TaskObject]]?
     
     @Published var pastDates: [Date] = getPastDays(numPastFutureDates)
@@ -449,6 +450,7 @@ struct ContentView: View {
 @main
 struct GetUpApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @Environment(\.scenePhase) var scenePhase
     
     init() {
         FirebaseApp.configure()
@@ -459,8 +461,18 @@ struct GetUpApp: App {
     
     var body: some Scene {
         WindowGroup {
-//            DictationView()
             ContentView()
+                .onChange(of: scenePhase) { newPhase in
+                    if newPhase == .active {
+                        // Trigger widget refresh when app enters the foreground
+                        WidgetCenter.shared.reloadTimelines(ofKind: "GetUpWidget")
+                        print("Widget refreshed on app enter")
+                    } else if newPhase == .background {
+                        // Trigger widget refresh when app enters the background
+                        WidgetCenter.shared.reloadTimelines(ofKind: "GetUpWidget")
+                        print("Widget refreshed on app exit")
+                    }
+                }
         }
     }
     
@@ -535,37 +547,152 @@ func setUID(_ uid: String) {
     }
 }
 
-func getTaskListByDate(_ date: Date) -> [TaskObject] {
-    let numTasks = Int.random(in:5...20)
-    var taskList: [TaskObject] = []
+// Parsing data into TaskListByDate
+func createTaskListsByDate(tasks: [TaskObject], dateList: [Date]) -> [Date: [TaskObject]]? {
+    // Initialize the result dictionary with empty arrays for each date in the dateList
+    var taskListsByDate: [Date: [TaskObject]] = [:]
+    let calendar = Calendar.current
     
-    let keys = Array(userDB.keys)
-    
-    for i in 1...numTasks {
-        
-        var randomParticipantStatusDict: [String: Bool] = [:]
-        
-        // Shuffle the keys and take the desired number of keys
-        let selectedKeys = keys.shuffled().prefix(Int.random(in:0...1))
-        
-        // Assign a random Bool to each selected key
-        for key in selectedKeys {
-            randomParticipantStatusDict[key] = Bool.random()
-        }
-        
-        let task = TaskObject(
-            name: "Task \(i)",
-            description: "long text long text long text long text long text long text long text long text long text long text long text long text",
-            colorIndex: Int.random(in:0...(colorDict.count-1)),
-            taskDate: randomTimeOnDate(date),
-            timerSet: Bool.random(),
-            creatorID: currentUserID,
-            participantsStatus: randomParticipantStatusDict
-        )
-        taskList.append(task)
+    // Ensure only valid dates in dateList are included
+    for date in dateList {
+        let startOfDay = calendar.startOfDay(for: date)
+        taskListsByDate[startOfDay] = []
     }
     
-    return taskList
+    // Iterate through tasks and add them to the appropriate date in the dictionary
+    for task in tasks {
+        if let taskDate = task.taskDate {
+            let startOfDay = calendar.startOfDay(for: taskDate)
+            if taskListsByDate.keys.contains(startOfDay) {
+                taskListsByDate[startOfDay]?.append(task)
+            }
+        }
+    }
+    
+    // Sort tasks in each date bucket
+    for key in taskListsByDate.keys {
+        taskListsByDate[key]?.sort { task1, task2 in
+            // Sorting logic:
+            // 1. Tasks with `timerSet == true` come first
+            // 2. Among tasks with `timerSet == true`, sort by `taskDate` (earlier -> later)
+            // 3. Tasks with `timerSet == false` come after
+            if task1.timerSet && !task2.timerSet {
+                return true
+            } else if !task1.timerSet && task2.timerSet {
+                return false
+            } else {
+                return task1.taskDate ?? Date.distantPast < task2.taskDate ?? Date.distantPast
+            }
+        }
+    }
+    
+    return taskListsByDate.isEmpty ? nil : taskListsByDate
+}
+
+// Functions to get Past, Present, Future days
+
+func getPastDays(_ numberOfDays: Int) -> [Date] {
+    var dates: [Date] = []
+    let calendar = Calendar.current
+    
+    // Generate dates from 30 days ago to today
+    for dayOffset in (1..<numberOfDays).reversed() {
+        if let date = calendar.date(byAdding: .day, value: -dayOffset, to: Date()) {
+            dates.append(startOfDay(for: date))
+        }
+    }
+    
+    return dates
+}
+
+func getToday() -> [Date] {
+    return [startOfDay(for: Date())]
+}
+
+// Function to get the next 7 days
+func getFutureDays(_ numberOfDays: Int) -> [Date] {
+    var dates: [Date] = []
+    let calendar = Calendar.current
+    
+    for dayOffset in 1...numberOfDays { // Start from 1 to exclude today
+        if let date = calendar.date(byAdding: .day, value: dayOffset, to: Date()) {
+            dates.append(startOfDay(for: date))
+        }
+    }
+    
+    return dates
+}
+
+func startOfDay(for date: Date) -> Date {
+    return Calendar.current.startOfDay(for: date)
+}
+
+func currentTimeOfDate(for date: Date) -> Date{
+    let calendar = Calendar.current
+    let now = Date() // Current date and time
+    
+    // Extract the time components (hour, minute, second) from the current time
+    let timeComponents = calendar.dateComponents([.hour, .minute, .second], from: now)
+    
+    // Combine the time components with the given date
+    return calendar.date(bySettingHour: timeComponents.hour ?? 0,
+                         minute: timeComponents.minute ?? 0,
+                         second: timeComponents.second ?? 0,
+                         of: date) ?? date
+}
+
+func randomTimeOnDate(_ date: Date) -> Date {
+    let calendar = Calendar.current
+    
+    // Get the start of the day (midnight) for the given date
+    let startOfDay = calendar.startOfDay(for: date)
+    
+    // Calculate the range of seconds in the day (24 hours)
+    let secondsInDay = 24 * 60 * 60
+    let randomSeconds = Int.random(in: 0..<secondsInDay)
+    
+    // Add the random seconds to the start of the day
+    return calendar.date(byAdding: .second, value: randomSeconds, to: startOfDay) ?? startOfDay
+}
+
+func formatDateTo24HourTime(date: Date?) -> String {
+    if let validatedDate = date{
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a" // 12-hour format with AM/PM
+        formatter.timeZone = TimeZone.current // Optional: Ensures it's in the local time zone
+        return formatter.string(from: validatedDate)
+    }
+    else{
+        return "-"
+    }
+}
+
+func getDisplayColorByCompletion(totalTasks: Int, completedTasks: Int) -> Color {
+    
+    if totalTasks > 0{
+        let percentageCompleted: CGFloat = CGFloat(completedTasks) / CGFloat(totalTasks)
+        
+        if percentageCompleted < 0.3 {
+            return Color.red
+        } else if percentageCompleted < 0.6 {
+            return Color.orange
+        } else if percentageCompleted < 0.9 {
+            return Color.yellow
+        } else {
+            return Color.green
+        }
+        
+    } else{
+        return Color.gray
+    }
+}
+
+func getOtherUIDs(from dict: [String: Bool]) -> [String] {
+    return dict.keys.filter { $0 != currentUserID }
+}
+
+func getOtherUsername(from uid: String) -> String{
+    return userDB[uid]?["userName"]?[0] ?? ""
 }
 
 #Preview {

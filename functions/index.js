@@ -36,13 +36,13 @@ exports.scheduleTaskNotifications = onDocumentWritten(
       }
 
       if (isNaN(taskDateObj.getTime())) {
-        logger.info("Invalid task date. Skipping notification.");
+        logger.info("Invalid. Skipping notification.");
         return;
       }
 
       // Skip notifications if the task date is in the past
       if (taskDateObj < new Date()) {
-        logger.info("Task date is in the past. Skipping notification.");
+        logger.info(`${taskDateObj} is in the past. Skipping notification.`);
         return;
       }
 

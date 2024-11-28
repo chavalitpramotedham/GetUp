@@ -35,11 +35,13 @@ struct WelcomeView: View {
                     .font(.largeTitle)
                     .fontWeight(.heavy)
                     .foregroundStyle(.white)
+                    .padding(.horizontal)
                 
                 Text("Reminders for Chava & Cheryl")
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.white)
+                    .padding(.horizontal)
                 
                 Spacer()
                 
