@@ -14,41 +14,59 @@ struct TaskCardView: View {
     @State private var isExpanded = false
     @State private var isDone: Bool
     
+    @State private var otherParticipantDict: [String: String] = [:]
+    
     var onEdit: () -> Void // Closure to trigger the edit
+    
+    var taskName: String
+    var taskDescription: String
+    var taskColorIndex: Int
+    var taskDate: Date?
+    var timerSet: Bool
+    var participantsStatus: [String:Bool]
+    var creatorID: String
     
     public init(taskManager: TaskManager, taskObject: TaskObject, onEdit: @escaping () -> Void) {
         self.taskManager = taskManager
         self.taskObject = taskObject
         self.onEdit = onEdit // Initialize the onEdit property
         _isDone = State(initialValue: taskObject.participantsStatus[currentUserID] ?? false) // Initialize with the model's `isDone` value
+        
+        taskName = taskObject.name
+        taskDescription = taskObject.description
+        taskColorIndex = taskObject.colorIndex
+        taskDate = taskObject.taskDate ?? nil
+        timerSet = taskObject.timerSet
+        participantsStatus = taskObject.participantsStatus
+        creatorID = taskObject.creatorID
     }
     
     var body: some View {
         
-        let taskName: String = taskObject.name
-        let taskDescription: String = taskObject.description
-        let taskColorIndex: Int = taskObject.colorIndex
-        let taskDate: Date? = taskObject.taskDate ?? nil
-        let timerSet: Bool = taskObject.timerSet
-        let participantsStatus = taskObject.participantsStatus
-        let creatorID = taskObject.creatorID
-        
-        var otherParticipantDict: [String: String] {
-            let uids = getOtherUIDs(from: participantsStatus)
-            var dict: [String: String] = [:]
-            for uid in uids {
-                Task{
-                    do {
-                        let username = try await getOtherUsername(from: uid)
-                        dict[uid] = username
-                    } catch {
-                        print("Failed to fetch username for UID \(uid): \(error.localizedDescription)")
-                        dict[uid] = "Unknown" // Fallback value
-                    }
-                }
-            }
-            return dict
-        }
+//        let taskName: String = taskObject.name
+//        let taskDescription: String = taskObject.description
+//        let taskColorIndex: Int = taskObject.colorIndex
+//        let taskDate: Date? = taskObject.taskDate ?? nil
+//        let timerSet: Bool = taskObject.timerSet
+//        let participantsStatus = taskObject.participantsStatus
+//        let creatorID = taskObject.creatorID
+//
+//        var otherParticipantDict: [String: String] {
+//            let uids = getOtherUIDs(from: participantsStatus)
+//            var dict: [String: String] = [:]
+//            for uid in uids {
+//                Task{
+//                    do {
+//                        let username = try await getOtherUsername(from: uid)
+//                        dict[uid] = username
+//                    } catch {
+//                        print("Failed to fetch username for UID \(uid): \(error.localizedDescription)")
+//                        dict[uid] = "Unknown" // Fallback value
+//                    }
+//                }
+//            }
+//            return dict
+//        }
         
         HStack (alignment: .center,spacing: 20){
             VStack(alignment: .leading,spacing:10){
@@ -119,7 +137,7 @@ struct TaskCardView: View {
                         if otherParticipantDict.count >= 1 {
                             
                             if otherParticipantDict.count >= 2 {
-                                Text("\(otherParticipantDict.first.map { $0.value } ?? "Unknown"))  +\(otherParticipantDict.count - 1)")
+                                Text("\(otherParticipantDict.count) others")
                                     .font(.system(size: 16))
                                     .fontWeight(.semibold)
                                     .foregroundStyle(.black.opacity(0.75))
@@ -175,5 +193,42 @@ struct TaskCardView: View {
         .background(Color.white)
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+        .onAppear {
+            updateOtherParticipantDict()
+        }
+    }
+    
+    private func updateOtherParticipantDict() {
+        getOtherParticipantDict { updatedDict in
+            DispatchQueue.main.async {
+                withAnimation { // Wrap the state update in an animation block
+                    otherParticipantDict = updatedDict
+                }
+            }
+        }
+    }
+    
+    private func getOtherParticipantDict(completion: @escaping ([String: String]) -> Void) {
+        let uids = getOtherUIDs(from: participantsStatus)
+        var dict: [String: String] = [:]
+        let group = DispatchGroup() // Use DispatchGroup to wait for all tasks
+
+        for uid in uids {
+            group.enter() // Enter the group for each async task
+            Task {
+                do {
+                    let username = try await getOtherUsername(from: uid)
+                    dict[uid] = username
+                } catch {
+                    print("Failed to fetch username for UID \(uid): \(error.localizedDescription)")
+                    dict[uid] = "Unknown" // Fallback value
+                }
+                group.leave() // Leave the group when the task is complete
+            }
+        }
+
+        group.notify(queue: .main) {
+            completion(dict) // Call completion with the updated dictionary
+        }
     }
 }
