@@ -493,7 +493,7 @@ struct EmptyWidgetTaskCardView: View {
 
 struct WidgetConcentricCircleView: View {
     var taskList: [TaskObjectForWidget]
-    let circleThickness: CGFloat = 7.5
+    let circleThickness: CGFloat = 8.5
 
     var body: some View {
         let categories = taskCategories(taskList)
@@ -524,7 +524,7 @@ struct WidgetConcentricCircleView: View {
 
     private func calculateSize(_ index: Int) -> CGFloat {
         let baseSize: CGFloat = 110
-        let spacing: CGFloat = 12.5
+        let spacing: CGFloat = 13.5
         return baseSize - CGFloat(index) * (circleThickness + spacing)
     }
 }
