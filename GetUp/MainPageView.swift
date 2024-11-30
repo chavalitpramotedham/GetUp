@@ -49,9 +49,10 @@ struct MainPageView: View {
                     Text("Social View <WIP>")
 
                 case 3:
-                    Text("Profile View <WIP>")
-//                    UserSelectionView()
-//                        .padding(.horizontal,30)
+                    WelcomeView(taskManager: taskManager)
+                        .padding(.horizontal,30)
+                        .padding(.top,30)
+                        .padding(.bottom,80)
 
                 default:
                     Text("Invalid Tab")
@@ -66,13 +67,3 @@ struct MainPageView: View {
         .navigationBarBackButtonHidden(true)
     }
 }
-
-//#Preview{
-//    MainPageView()
-//}
-                                
-//struct ContentView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        MainPageView()
-//    }
-//}

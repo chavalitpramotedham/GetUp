@@ -58,19 +58,51 @@ struct CalendarSummary: View {
         
         return AnyView(
             HStack (alignment:.center, spacing:20){
-                let profilePicture = userDB[currentUserID]?["profilePicture"]?[0] ?? "person"
                 
-                Image(profilePicture)
-                    .resizable()
-                    .scaledToFill()
-                    .scaleEffect(1.5)
-                    .frame(width: 45, height: 45)
-                    .clipShape(Circle()) // Make the image circular
-                    .overlay(
+                if currentUserImageURL != "" {
+                    let url = URL(string: currentUserImageURL)
+                    
+                    AsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .scaleEffect(1.5)
+                            .frame(width: 45, height: 45)
+                            .clipShape(Circle()) // Make the image circular
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.black, lineWidth: 0.5) // Add a black outline
+                            )
+                            .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
+                    } placeholder: {
+                        ZStack{
+                            Circle()
+                                .fill(Color.gray.opacity(0.6))
+                                .stroke(Color.black, lineWidth: 0.5) // Add a black outline
+                                .frame(width: 45, height: 45)
+                                .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
+                            
+                            ProgressView()
+                        }
+                    }
+                } else {
+                    
+                    ZStack{
                         Circle()
+                            .fill(Color.gray.opacity(0.6))
                             .stroke(Color.black, lineWidth: 0.5) // Add a black outline
-                    )
-                    .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
+                            .frame(width: 45, height: 45)
+                            .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
+                        
+                        Image(systemName: "person.fill")
+                            .resizable()
+                            .scaledToFill()
+                            .scaleEffect(0.4)
+                            .foregroundColor(.white)
+                            .frame(width: 45, height: 45)
+                            .clipShape(Circle()) // Make the image circular
+                    }
+                }
                 
                 VStack (spacing:10){
                     HStack (alignment:.bottom){

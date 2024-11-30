@@ -11,7 +11,24 @@ import Foundation
 import FirebaseCore
 import FirebaseFirestore
 
-let currentUserID = "123"
+var currentDeviceID = UIDevice.current.identifierForVendor?.uuidString ?? "unknown"
+var currentUserID = ""
+var currentUserImageURL: String = ""
+
+// To be stored in DB
+let userDB: [String:[String:[String]]] = [
+    "123": [
+        "userName": ["Chava"],
+        "profilePicture": ["Chava"],
+        "connections": ["456"]
+    ],
+    "456":
+    [
+        "userName": ["Cheryl"],
+        "profilePicture": ["Cheryl"],
+        "connections": ["123"]
+    ]
+]
 
 let colorDict: [Int: Color] = [
     0: Color.gray,
@@ -36,14 +53,16 @@ class TaskObjectForWidget: Identifiable {
     var isDone: Bool
     var timerSet: Bool
     var taskDate: Date
+    var participantsStatus : [String:Bool]
     
-    init(taskID: String, colorIndex: Int, name: String, isDone: Bool, timerSet: Bool, taskDate: Date) {
+    init(taskID: String, colorIndex: Int, name: String, isDone: Bool, timerSet: Bool, taskDate: Date, participantsStatus: [String:Bool]) {
         self.taskID = taskID
         self.colorIndex = colorIndex
         self.name = name
         self.isDone = isDone
         self.timerSet = timerSet
         self.taskDate = taskDate
+        self.participantsStatus = participantsStatus
     }
     
     // Initialize from Firestore Document
@@ -54,7 +73,8 @@ class TaskObjectForWidget: Identifiable {
             let colorIndex = document["colorIndex"] as? Int,
             let timerSet = document["timerSet"] as? Bool,
             let participantsStatus = document["participantsStatus"] as? [String: Bool],
-            let taskDateTimestamp = document["taskDate"] as? Timestamp
+            let taskDateTimestamp = document["taskDate"] as? Timestamp,
+            let participantsStatus = document["participantsStatus"] as? [String: Bool]
         else {
             return nil // Return nil if required fields are missing
         }
@@ -68,7 +88,8 @@ class TaskObjectForWidget: Identifiable {
             name: name,
             isDone: isDone,
             timerSet: timerSet,
-            taskDate: taskDate
+            taskDate: taskDate,
+            participantsStatus: participantsStatus
         )
     }
 }
@@ -98,6 +119,7 @@ class TaskManager: ObservableObject {
     private var firestoreManager = FirestoreManager()
 
     init() {
+        getLastLinkedUser()
         fetchTasks()
     }
 
@@ -120,12 +142,16 @@ class TaskManager: ObservableObject {
         let today = Date()
 
         // Filter tasks for today
-        let filteredTasks = tasks.filter { task in
+        let todayTasks = tasks.filter { task in
             calendar.isDate(task.taskDate, inSameDayAs: today)
+        }
+        
+        let myTodayTasks = todayTasks.filter { task in
+            task.participantsStatus.keys.contains(currentUserID)
         }
 
         // Sort the tasks
-        return filteredTasks.sorted { task1, task2 in
+        return myTodayTasks.sorted { task1, task2 in
             // 1. Tasks with `timerSet == true` come first
             // 2. Among tasks with `timerSet == true`, sort by `taskDate` (earlier -> later)
             // 3. Tasks with `timerSet == false` come after
@@ -172,12 +198,9 @@ struct Provider: AppIntentTimelineProvider {
     func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
         // Return a snapshot with sample data
         let sampleTasks = [
-            TaskObjectForWidget(taskID: "1", colorIndex: 0, name: "Sample Task 1", isDone: true, timerSet: false, taskDate: Date()),
-            TaskObjectForWidget(taskID: "2", colorIndex: 1, name: "Sample Task 2", isDone: false, timerSet: true, taskDate: Date()),
-            TaskObjectForWidget(taskID: "3", colorIndex: 2, name: "Sample Task 3", isDone: false, timerSet: false, taskDate: Date()),
-            TaskObjectForWidget(taskID: "4", colorIndex: 3, name: "Sample Task 4", isDone: false, timerSet: true, taskDate: Date()),
-            TaskObjectForWidget(taskID: "5", colorIndex: 4, name: "Sample Task 5", isDone: true, timerSet: false, taskDate: Date()),
-            TaskObjectForWidget(taskID: "6", colorIndex: 1, name: "Sample Task 6", isDone: false, timerSet: true, taskDate: Date())
+            TaskObjectForWidget(taskID: "1", colorIndex: 0, name: "Sample Task 1", isDone: true, timerSet: false, taskDate: Date(), participantsStatus: ["123":false]),
+            TaskObjectForWidget(taskID: "2", colorIndex: 1, name: "Sample Task 2", isDone: false, timerSet: true, taskDate: Date(), participantsStatus: ["123":false]),
+            TaskObjectForWidget(taskID: "3", colorIndex: 2, name: "Sample Task 3", isDone: false, timerSet: false, taskDate: Date(), participantsStatus: ["123":false]),
         ]
         
         let totalTaskNum = sampleTasks.count
@@ -288,38 +311,68 @@ struct GetUpWidgetEntryView: View {
 
                 // Task List
                 VStack(alignment: .leading, spacing: 10) {
-                    VStack(alignment:.leading, spacing:3){
-                        if entry.taskList.count == 0{
-                            Text("No Tasks Yet")
-                                .font(.system(size: 14))
-                                .foregroundColor(.black)
-                                .fontWeight(.bold)
-                                .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 0)
-                        }else{
-                            HStack(alignment: .bottom){
-                                Text("\(Int(entry.completionPercentage * 100))%")
+                    HStack(alignment:.center,spacing:10){
+//                        if currentUserImageURL != "" {
+//                            let url = URL(string: currentUserImageURL)
+//                            
+//                            AsyncImage(url: url) { image in
+//                                image
+//                                    .resizable()
+//                                    .scaledToFill()
+//                                    .scaleEffect(1.5)
+//                                    .frame(width: 25, height: 25)
+//                                    .clipShape(Circle()) // Make the image circular
+//                                    .overlay(
+//                                        Circle()
+//                                            .stroke(Color.black, lineWidth: 0.5) // Add a black outline
+//                                    )
+//                                    .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 0)
+//                            } placeholder: {
+//                                ZStack{
+//                                    Circle()
+//                                        .fill(Color.gray.opacity(0.6))
+//                                        .stroke(Color.black, lineWidth: 0.5) // Add a black outline
+//                                        .frame(width: 25, height: 25)
+//                                        .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 0)
+//                                    
+////                                    ProgressView()
+//                                }
+//                            }
+//                        }
+                        
+                        VStack(alignment:.leading, spacing:3){
+                            if entry.taskList.count == 0{
+                                Text("No Tasks Yet")
                                     .font(.system(size: 14))
                                     .foregroundColor(.black)
-                                    .fontWeight(.heavy)
+                                    .fontWeight(.bold)
                                     .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 0)
+                            }else{
+                                HStack(alignment: .bottom){
+                                    Text("\(Int(entry.completionPercentage * 100))%")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.black)
+                                        .fontWeight(.heavy)
+                                        .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 0)
+                                    
+                                    Spacer()
+                                    
+                                    Text("\(completedTasks)/\(totalTasks) Done")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.gray)
+                                        .fontWeight(.semibold)
+                                        .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 0)
+                                }
+                                .frame(maxWidth:.infinity)
                                 
-                                Spacer()
-                                
-                                Text("\(completedTasks)/\(totalTasks) Done")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.gray)
-                                    .fontWeight(.semibold)
-                                    .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 0)
                             }
-                            .frame(maxWidth:.infinity)
                             
+                            ProgressView(value: entry.completionPercentage)
+                                .progressViewStyle(LinearProgressViewStyle(tint: displayColor))
+                                .scaleEffect(x: 1, y: 1, anchor: .center)
+                                .frame(maxWidth:.infinity)
+                                .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 0)
                         }
-                        
-                        ProgressView(value: entry.completionPercentage)
-                            .progressViewStyle(LinearProgressViewStyle(tint: displayColor))
-                            .scaleEffect(x: 1, y: 1, anchor: .center)
-                            .frame(maxWidth:.infinity)
-                            .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 0)
                     }
                     
                     widgetTaskList
@@ -504,6 +557,73 @@ func taskCategories(_ taskList: [TaskObjectForWidget]) -> [(name: String, color:
 
     return categories
 }
+
+func getLastLinkedUser(){
+    let deviceRef = Firestore.firestore().collection("deviceToUsers").document(currentDeviceID)
+
+    deviceRef.getDocument { document, error in
+        if let error = error {
+            print("Error fetching device document: \(error.localizedDescription)")
+            return
+        }
+        
+        guard let document = document, document.exists,
+              let lastLinkedUID = document.data()?["lastLinkedUID"] as? String else {
+            print("Document does not exist or lastLinkedUID is missing.")
+            return
+        }
+        
+        print("Retrieved lastLinkedUID: \(lastLinkedUID)")
+        
+        // Now fetch the user data based on this UID
+        if !lastLinkedUID.isEmpty {
+            currentUserID = lastLinkedUID
+
+//            Task {
+//                do {
+//                    try await setUserData(lastLinkedUID) // Use the retrieved UID
+//                } catch {
+//                    print("Failed to set user data for lastLinkedUID \(lastLinkedUID): \(error.localizedDescription)")
+//                }
+//            }
+        } else {
+            print("No lastLinkedUID found.")
+        }
+    }
+}
+
+//func setUserData(_ uid: String) async throws {
+//    do {
+//        let data = try await fetchUserData(from: uid)
+//
+//        // Assign values to your variables
+//        currentUserID = uid
+//        currentUserImageURL = data["userImageURL"] as? String ?? ""
+//
+//        // Optional: Print to verify
+//        print("User Data:")
+//        print("ID: \(currentUserID)")
+//        print("Image URL: \(currentUserImageURL)")
+//    } catch {
+//        print("Error fetching user data: \(error.localizedDescription)")
+//        throw error // Rethrow the error if necessary
+//    }
+//}
+
+//func fetchUserData(from uid: String) async throws -> [String: Any] {
+//    let userRef = Firestore.firestore().collection("users").document(uid)
+//
+//    do {
+//        let document = try await userRef.getDocument()
+//        if let data = document.data() {
+//            return data // Return the document data
+//        } else {
+//            throw NSError(domain: "FirestoreError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Document does not exist or has no data."])
+//        }
+//    } catch {
+//        throw error // Propagate the error
+//    }
+//}
 
 struct GetUpWidget: Widget {
     let kind: String = "GetUpWidget"

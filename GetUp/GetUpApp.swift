@@ -9,8 +9,27 @@ import SwiftUI
 import FirebaseCore
 import FirebaseFirestore
 import FirebaseMessaging
+import FirebaseStorage
 import UserNotifications
 import WidgetKit
+
+import Network
+
+class NetworkMonitor {
+    static let shared = NetworkMonitor()
+    private let monitor = NWPathMonitor()
+    private let queue = DispatchQueue.global(qos: .background)
+    
+    var isConnected: Bool = false
+    
+    private init() {
+        monitor.pathUpdateHandler = { path in
+            self.isConnected = path.status == .satisfied
+            print("Network connectivity: \(self.isConnected ? "Connected" : "Disconnected")")
+        }
+        monitor.start(queue: queue)
+    }
+}
 
 // Static variables
 
@@ -36,24 +55,14 @@ let nameDict: [Int: String] = [
 
 /// USER Variables:
 
-var currentUserID = "123"
-var currentUserName = "Chava"
-var connectionsList: [String] = ["456"]
+var currentDeviceID: String {
+    UIDevice.current.identifierForVendor?.uuidString ?? "unknown"
+}
 
-// To be stored in DB
-let userDB: [String:[String:[String]]] = [
-    "123": [
-        "userName": ["Chava"],
-        "profilePicture": ["Chava"],
-        "connections": ["456"]
-    ],
-    "456":
-    [
-        "userName": ["Cheryl"],
-        "profilePicture": ["Cheryl"],
-        "connections": ["123"]
-    ]
-]
+var currentUserID: String = "unknown"
+var currentUserName: String = "unknown"
+var currentUserImageURL: String = ""
+var currentUserConnections: [String] = []
 
 let env = EnvReader()
 
@@ -447,34 +456,76 @@ struct ContentView: View {
     }
 }
 
+class UserSession {
+    static let shared = UserSession()
+    private let queue = DispatchQueue(label: "com.getup.userSession", attributes: .concurrent)
+
+    private var _deviceLinkedUIDs: [String] = []
+
+    var deviceLinkedUIDs: [String] {
+        get { queue.sync { _deviceLinkedUIDs } }
+        set { queue.async(flags: .barrier) { self._deviceLinkedUIDs = newValue } }
+    }
+}
+
+class AppState: ObservableObject {
+    @Published var isInitialized = false
+
+    func initialize() async {
+        await Self.fetchInitialData()
+        DispatchQueue.main.async {
+            self.isInitialized = true
+        }
+    }
+
+    private static func fetchInitialData() async {
+        await withCheckedContinuation { continuation in
+            getLastLinkedUserAndUIDs {
+                continuation.resume()
+            }
+        }
+    }
+}
+
 @main
 struct GetUpApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @Environment(\.scenePhase) var scenePhase
+    @StateObject private var appState = AppState()
     
     init() {
         FirebaseApp.configure()
-        print(env.get("OPENAI_API_KEY") ?? "API_KEY not found")
-        
         configureNotificationPermissions() // Request permissions and set up notifications
+        
+        print(currentDeviceID)
     }
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .onChange(of: scenePhase) { newPhase in
-                    if newPhase == .active {
-                        // Trigger widget refresh when app enters the foreground
-                        WidgetCenter.shared.reloadTimelines(ofKind: "GetUpWidget")
-                        WidgetCenter.shared.reloadTimelines(ofKind: "GetUpLockScreenWidget")
-                        print("Widget refreshed on app enter")
-                    } else if newPhase == .background {
-                        // Trigger widget refresh when app enters the background
-                        WidgetCenter.shared.reloadTimelines(ofKind: "GetUpWidget")
-                        WidgetCenter.shared.reloadTimelines(ofKind: "GetUpLockScreenWidget")
-                        print("Widget refreshed on app exit")
+            
+            if appState.isInitialized {
+                ContentView()
+                    .onChange(of: scenePhase) { newPhase in
+                        if newPhase == .active {
+                            // Trigger widget refresh when app enters the foreground
+                            WidgetCenter.shared.reloadTimelines(ofKind: "GetUpWidget")
+                            WidgetCenter.shared.reloadTimelines(ofKind: "GetUpLockScreenWidget")
+                            print("Widget refreshed on app enter")
+                        } else if newPhase == .background {
+                            // Trigger widget refresh when app enters the background
+                            WidgetCenter.shared.reloadTimelines(ofKind: "GetUpWidget")
+                            WidgetCenter.shared.reloadTimelines(ofKind: "GetUpLockScreenWidget")
+                            print("Widget refreshed on app exit")
+                        }
                     }
-                }
+            } else {
+                ProgressView("Initializing...")
+                    .onAppear {
+                        Task {
+                            await appState.initialize()
+                        }
+                    }
+            }
         }
     }
     
@@ -514,7 +565,103 @@ extension GetUpApp {
     }
 }
 
+func getLastLinkedUserAndUIDs(completion: @escaping () -> Void){
 
+    let deviceRef = Firestore.firestore().collection("deviceToUsers").document(currentDeviceID)
+    
+    if FirebaseApp.app() != nil {
+        print("Firebase is configured!")
+    } else {
+        print("Firebase is not configured.")
+    }
+    
+    if NetworkMonitor.shared.isConnected {
+        print("Internet is available")
+    } else {
+        print("No internet connection")
+    }
+
+    deviceRef.getDocument { document, error in
+        if let error = error {
+            print("Error fetching device document: \(error.localizedDescription)")
+            completion() // Always call the completion handler
+            return
+        }
+        
+        guard let document = document, document.exists else {
+            print("Device document does not exist. Initialize entry")
+            
+            // Write default fields to Firestore
+            deviceRef.setData([
+                "lastLinkedUID": "",
+                "linkedUIDs": []
+            ]) { error in
+                if let error = error {
+                    print("Error writing default fields: \(error.localizedDescription)")
+                } else {
+                    print("Default fields successfully written to Firestore.")
+                }
+                completion() // Call completion after handling the write operation
+            }
+            return
+        }
+
+        // Parse the data
+        let data = document.data()
+        let lastLinkedUID = data?["lastLinkedUID"] as? String ?? ""
+        UserSession.shared.deviceLinkedUIDs = data?["linkedUIDs"] as? [String] ?? []
+
+        print("Retrieved lastLinkedUID: \(lastLinkedUID)")
+        print("Retrieved linkedUIDs: \(UserSession.shared.deviceLinkedUIDs)")
+
+        // Now fetch the user data based on this UID
+        // Fetch the user data based on lastLinkedUID
+        if !lastLinkedUID.isEmpty && lastLinkedUID != ""{
+            Task {
+                do {
+                    try await setUserData(lastLinkedUID)
+                } catch {
+                    print("Failed to set user data for lastLinkedUID \(lastLinkedUID): \(error.localizedDescription)")
+                }
+            }
+        } else {
+            print("No lastLinkedUID found.")
+        }
+        
+        completion()
+    }
+}
+
+func getOtherLinkedUIDs() -> [String] {
+    var otherLinkedUIDs = UserSession.shared.deviceLinkedUIDs
+    if let index = otherLinkedUIDs.firstIndex(of: currentUserID) {
+        otherLinkedUIDs.remove(at: index)
+    }
+    return otherLinkedUIDs
+}
+
+
+func setUserData(_ uid: String) async throws {
+    do {
+        let data = try await fetchUserData(from: uid)
+
+        // Assign values to your variables
+        currentUserID = uid
+        currentUserName = data["userName"] as? String ?? ""
+        currentUserImageURL = data["userImageURL"] as? String ?? ""
+        currentUserConnections = data["userConnections"] as? [String] ?? []
+
+        // Optional: Print to verify
+        print("User Data:")
+        print("ID: \(currentUserID)")
+        print("Name: \(currentUserName)")
+        print("Image URL: \(currentUserImageURL)")
+        print("Connections: \(currentUserConnections)")
+    } catch {
+        print("Error fetching user data: \(error.localizedDescription)")
+        throw error // Rethrow the error if necessary
+    }
+}
 
 func triggerHapticFeedback() {
     let impactFeedbackGenerator = UIImpactFeedbackGenerator(style: .medium)
@@ -524,8 +671,14 @@ func triggerHapticFeedback() {
 
 func setUID(_ uid: String) {
     currentUserID = uid
-    currentUserName = userDB[currentUserID]?["userName"]?[0] ?? ""
-    connectionsList = userDB[currentUserID]?["connections"] ?? []
+    
+    Task {
+        do {
+            try await setUserData(uid)
+        } catch {
+            print("Failed to set user data: \(error.localizedDescription)")
+        }
+    }
 
     // Fetch the FCM token
     Messaging.messaging().token { token, error in
@@ -545,6 +698,75 @@ func setUID(_ uid: String) {
             }
         } else {
             print("FCM token not available.")
+        }
+    }
+    
+    // Write the most recently linked UID to deviceToUsers
+    let deviceRef = Firestore.firestore().collection("deviceToUsers").document(currentDeviceID)
+    
+    // Fetch current linkedUIDs and update them
+    deviceRef.getDocument { snapshot, error in
+        if let error = error {
+            print("Error fetching deviceToUsers document: \(error.localizedDescription)")
+        } else {
+            UserSession.shared.deviceLinkedUIDs = snapshot?.data()?["linkedUIDs"] as? [String] ?? []
+            
+            if !UserSession.shared.deviceLinkedUIDs.contains(uid) {
+                UserSession.shared.deviceLinkedUIDs.append(uid)
+                
+                deviceRef.setData(["linkedUIDs": UserSession.shared.deviceLinkedUIDs], merge: true) { error in
+                    if let error = error {
+                        print("Error writing linkedUIDs to Firestore: \(error.localizedDescription)")
+                    } else {
+                        print("Successfully updated linkedUIDs for DeviceID: \(currentDeviceID)")
+                    }
+                }
+            } else {
+                print("UID \(uid) is already in linkedUIDs.")
+            }
+            
+            deviceRef.setData(["lastLinkedUID": uid], merge: true) { error in
+                if let error = error {
+                    print("Error writing LastLinkedUID to Firestore: \(error.localizedDescription)")
+                } else {
+                    print("Successfully wrote LastLinkedUID to Firestore for DeviceID: \(currentDeviceID)")
+                }
+            }
+        }
+    }
+    
+    
+    deviceRef.setData(["lastLinkedUID": uid], merge: true) { error in
+        if let error = error {
+            print("Error writing LastLinkedUID to Firestore: \(error.localizedDescription)")
+        } else {
+            print("Successfully wrote LastLinkedUID to Firestore for DeviceID: \(currentDeviceID)")
+        }
+    }
+    
+    fetchUserImageURL(uid: uid) { result in
+        switch result {
+        case .success(let url):
+            print("Image URL: \(url)")
+            // Save this URL to Firestore for the user
+        case .failure(let error):
+            print("Error fetching URL: \(error.localizedDescription)")
+        }
+    }
+}
+
+func fetchUserImageURL(uid: String, completion: @escaping (Result<String, Error>) -> Void) {
+    let storageRef = Storage.storage().reference()
+    let imageRef = storageRef.child("userImages/\(uid).jpg")
+
+    imageRef.downloadURL { url, error in
+        if let error = error {
+            completion(.failure(error))
+            return
+        }
+
+        if let downloadURL = url?.absoluteString {
+            completion(.success(downloadURL))
         }
     }
 }
@@ -693,8 +915,24 @@ func getOtherUIDs(from dict: [String: Bool]) -> [String] {
     return dict.keys.filter { $0 != currentUserID }
 }
 
-func getOtherUsername(from uid: String) -> String{
-    return userDB[uid]?["userName"]?[0] ?? ""
+func getOtherUsername(from uid: String) async throws -> String {
+    let data = try await fetchUserData(from: uid)
+    return data["userName"] as? String ?? ""
+}
+
+func fetchUserData(from uid: String) async throws -> [String: Any] {
+    let userRef = Firestore.firestore().collection("users").document(uid)
+
+    do {
+        let document = try await userRef.getDocument()
+        if let data = document.data() {
+            return data // Return the document data
+        } else {
+            throw NSError(domain: "FirestoreError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Document does not exist or has no data."])
+        }
+    } catch {
+        throw error // Propagate the error
+    }
 }
 
 #Preview {

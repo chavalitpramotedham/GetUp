@@ -615,7 +615,15 @@ struct TemporaryTaskCardView: View {
             let uids = getOtherUIDs(from: participantsStatus)
             var dict: [String: String] = [:]
             for uid in uids {
-                dict[uid] = getOtherUsername(from: uid)
+                Task{
+                    do {
+                        let username = try await getOtherUsername(from: uid)
+                        dict[uid] = username
+                    } catch {
+                        print("Failed to fetch username for UID \(uid): \(error.localizedDescription)")
+                        dict[uid] = "Unknown" // Fallback value
+                    }
+                }
             }
             return dict
         }

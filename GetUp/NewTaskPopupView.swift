@@ -29,15 +29,7 @@ struct NewTaskPopupView: View {
     var onCancel: (() -> Void)?
     var onDelete: (() -> Void)?
     
-    private var otherParticipantDict: [String: String] {
-        let uids = getOtherUIDs(from: participantsStatus)
-        var dict: [String: String] = [:]
-        for uid in uids {
-            dict[uid] = getOtherUsername(from: uid)
-        }
-        return dict
-    }
-
+    @State private var otherParticipantDict: [String: String] = [:]
     
     var body: some View {
         VStack(alignment:.center, spacing: 20) {
@@ -54,6 +46,9 @@ struct NewTaskPopupView: View {
         .cornerRadius(20)
         .shadow(radius: 20)
         .transition(.scale) // Popup scale animation
+        .onAppear(){
+            updateOtherParticipantDict()
+        }
     }
     
     @ViewBuilder
@@ -287,7 +282,9 @@ struct NewTaskPopupView: View {
             
             Button(otherParticipantDict.count >= 1 ? (otherParticipantDict.count >= 2 ? "\(otherParticipantDict.count) others" : (otherParticipantDict.first.map { $0.value } ?? "Unknown")) : "Sync") {
                 withAnimation {
-                    let connections = connectionsList
+                    let connections = currentUserConnections
+                    
+                    let _ = print(connections)
                     if connections.count > 0 {
                         if connections.count == 1 {
                             // Assumes only can add 1 other person
@@ -296,6 +293,8 @@ struct NewTaskPopupView: View {
                                     participantsStatus[target] = false
                                 }
                             }
+                            updateOtherParticipantDict()
+                            
                         } else{
                             // Default behavior: add all connections to task
                             for target in connections{
@@ -303,6 +302,7 @@ struct NewTaskPopupView: View {
                                     participantsStatus[target] = false
                                 }
                             }
+                            updateOtherParticipantDict()
                         }
                     }
                 }
@@ -321,6 +321,8 @@ struct NewTaskPopupView: View {
                                         participantsStatus.removeValue(forKey: target)
                                     }
                                 }
+                                
+                                updateOtherParticipantDict()
                             } else{
                                 // Default behavior: remove all participants in task
                                 for target in otherParticipantDict.keys{
@@ -328,6 +330,8 @@ struct NewTaskPopupView: View {
                                         participantsStatus.removeValue(forKey: target)
                                     }
                                 }
+                                
+                                updateOtherParticipantDict()
                             }
                         }
                     },
@@ -345,5 +349,39 @@ struct NewTaskPopupView: View {
             RoundedRectangle(cornerRadius: 20)
                 .fill(otherParticipantDict.count >= 1 ? Color.blue : Color.gray.opacity(0.1))
         )
+    }
+    
+    private func updateOtherParticipantDict() {
+        getOtherParticipantDict { updatedDict in
+            DispatchQueue.main.async {
+                withAnimation { // Wrap the state update in an animation block
+                    otherParticipantDict = updatedDict
+                }
+            }
+        }
+    }
+    
+    private func getOtherParticipantDict(completion: @escaping ([String: String]) -> Void) {
+        let uids = getOtherUIDs(from: participantsStatus)
+        var dict: [String: String] = [:]
+        let group = DispatchGroup() // Use DispatchGroup to wait for all tasks
+
+        for uid in uids {
+            group.enter() // Enter the group for each async task
+            Task {
+                do {
+                    let username = try await getOtherUsername(from: uid)
+                    dict[uid] = username
+                } catch {
+                    print("Failed to fetch username for UID \(uid): \(error.localizedDescription)")
+                    dict[uid] = "Unknown" // Fallback value
+                }
+                group.leave() // Leave the group when the task is complete
+            }
+        }
+
+        group.notify(queue: .main) {
+            completion(dict) // Call completion with the updated dictionary
+        }
     }
 }
