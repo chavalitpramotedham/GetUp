@@ -599,6 +599,8 @@ struct TemporaryTaskCardView: View {
     @ObservedObject var taskObject: TaskObject
     @State private var isExpanded = false
     
+    @State private var otherParticipantDict: [String: String] = [:]
+    
     var onTaskAction: (TaskAction) -> Void
     
     var body: some View {
@@ -611,22 +613,22 @@ struct TemporaryTaskCardView: View {
         let participantsStatus = taskObject.participantsStatus
         let creatorID = taskObject.creatorID
         
-        var otherParticipantDict: [String: String] {
-            let uids = getOtherUIDs(from: participantsStatus)
-            var dict: [String: String] = [:]
-            for uid in uids {
-                Task{
-                    do {
-                        let username = try await getOtherUsername(from: uid)
-                        dict[uid] = username
-                    } catch {
-                        print("Failed to fetch username for UID \(uid): \(error.localizedDescription)")
-                        dict[uid] = "Unknown" // Fallback value
-                    }
-                }
-            }
-            return dict
-        }
+//        var otherParticipantDict: [String: String] {
+//            let uids = getOtherUIDs(from: participantsStatus)
+//            var dict: [String: String] = [:]
+//            for uid in uids {
+//                Task{
+//                    do {
+//                        let username = try await getOtherUsername(from: uid)
+//                        dict[uid] = username
+//                    } catch {
+//                        print("Failed to fetch username for UID \(uid): \(error.localizedDescription)")
+//                        dict[uid] = "Unknown" // Fallback value
+//                    }
+//                }
+//            }
+//            return dict
+//        }
         
         HStack (alignment: .center,spacing: 20){
             VStack(alignment: .leading,spacing:10){
@@ -681,7 +683,7 @@ struct TemporaryTaskCardView: View {
                         if otherParticipantDict.count >= 1 {
                             
                             if otherParticipantDict.count >= 2 {
-                                Text("\(otherParticipantDict.first.map { $0.value } ?? "Unknown"))  +\(otherParticipantDict.count - 1)")
+                                Text("\(otherParticipantDict.count) others")
                                     .font(.system(size: 16))
                                     .fontWeight(.semibold)
                                     .foregroundStyle(.black.opacity(0.75))
@@ -768,6 +770,43 @@ struct TemporaryTaskCardView: View {
         .background(Color.white)
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+        .onAppear {
+            updateOtherParticipantDict(participantsStatus)
+        }
+    }
+    
+    private func updateOtherParticipantDict(_ participantsStatus: [String:Bool]) {
+        getOtherParticipantDict(participantsStatus) { updatedDict in
+            DispatchQueue.main.async {
+                withAnimation { // Wrap the state update in an animation block
+                    otherParticipantDict = updatedDict
+                }
+            }
+        }
+    }
+    
+    private func getOtherParticipantDict(_ participantsStatus: [String:Bool], completion: @escaping ([String: String]) -> Void) {
+        let uids = getOtherUIDs(from: participantsStatus)
+        var dict: [String: String] = [:]
+        let group = DispatchGroup() // Use DispatchGroup to wait for all tasks
+
+        for uid in uids {
+            group.enter() // Enter the group for each async task
+            Task {
+                do {
+                    let username = try await getOtherUsername(from: uid)
+                    dict[uid] = username
+                } catch {
+                    print("Failed to fetch username for UID \(uid): \(error.localizedDescription)")
+                    dict[uid] = "Unknown" // Fallback value
+                }
+                group.leave() // Leave the group when the task is complete
+            }
+        }
+
+        group.notify(queue: .main) {
+            completion(dict) // Call completion with the updated dictionary
+        }
     }
 }
 

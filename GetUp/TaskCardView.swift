@@ -42,32 +42,6 @@ struct TaskCardView: View {
     }
     
     var body: some View {
-        
-//        let taskName: String = taskObject.name
-//        let taskDescription: String = taskObject.description
-//        let taskColorIndex: Int = taskObject.colorIndex
-//        let taskDate: Date? = taskObject.taskDate ?? nil
-//        let timerSet: Bool = taskObject.timerSet
-//        let participantsStatus = taskObject.participantsStatus
-//        let creatorID = taskObject.creatorID
-//
-//        var otherParticipantDict: [String: String] {
-//            let uids = getOtherUIDs(from: participantsStatus)
-//            var dict: [String: String] = [:]
-//            for uid in uids {
-//                Task{
-//                    do {
-//                        let username = try await getOtherUsername(from: uid)
-//                        dict[uid] = username
-//                    } catch {
-//                        print("Failed to fetch username for UID \(uid): \(error.localizedDescription)")
-//                        dict[uid] = "Unknown" // Fallback value
-//                    }
-//                }
-//            }
-//            return dict
-//        }
-        
         HStack (alignment: .center,spacing: 20){
             VStack(alignment: .leading,spacing:10){
                 HStack(alignment: .center,spacing: 10){

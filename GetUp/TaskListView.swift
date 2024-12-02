@@ -100,31 +100,6 @@ struct TaskListView: View {
                     
                     taskListForSelectedTab
                     
-//                    ScrollView {
-//                        VStack(spacing: 10) {
-//                            taskListForSelectedTab
-//                        }
-//                    }
-//                    .frame(maxWidth:.infinity,maxHeight:.infinity)
-//                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    
-//                    if myTaskList.count > 0{
-//                        ScrollView {
-//                            VStack(spacing: 10) {
-//                                taskListForSelectedTab
-//                            }
-//                        }
-//                        .frame(maxWidth:.infinity,maxHeight:.infinity)
-//                        .clipShape(RoundedRectangle(cornerRadius: 10))
-//                    } else {
-//                        Spacer()
-//                        Image("fallback")
-//                            .scaledToFit()
-//                            .scaleEffect(0.75)
-//                            .frame(width:75,height:75)
-//                        Spacer()
-//                    }
-                    
                     
                 }
                 .padding([.leading,.trailing,.bottom],10)

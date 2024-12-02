@@ -85,70 +85,73 @@ struct WelcomeView: View {
     
     private var UserSelectionView: some View {
         VStack(spacing:30){
-            NavigationLink(destination: MainPageView(taskManager: taskManager)) {
-                VStack(spacing: 20) {
-                    
-                    if currentUserImageURL != "" {
-                        let url = URL(string: currentUserImageURL)
+            
+            if !UserSession.shared.deviceLinkedUIDs.isEmpty{
+                NavigationLink(destination: MainPageView(taskManager: taskManager)) {
+                    VStack(spacing: 20) {
                         
-                        AsyncImage(url: url) { image in
-                            image
-                                .resizable()
-                                .scaledToFill()
-                                .scaleEffect(1.5)
-                                .frame(width: 250, height: 250)
-                                .clipShape(Circle()) // Make the image circular
-                                .overlay(
+                        if currentUserImageURL != "" {
+                            let url = URL(string: currentUserImageURL)
+                            
+                            AsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .scaleEffect(1.5)
+                                    .frame(width: 250, height: 250)
+                                    .clipShape(Circle()) // Make the image circular
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.white, lineWidth: 3)
+                                    )
+                                    .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
+                            } placeholder: {
+                                ZStack{
                                     Circle()
+                                        .fill(Color.gray.opacity(0.9))
                                         .stroke(Color.white, lineWidth: 3)
-                                )
-                                .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
-                        } placeholder: {
+                                        .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
+                                        .frame(width: 250, height: 250)
+                                    
+                                    ProgressView()
+                                }
+                            }
+                        } else{
                             ZStack{
                                 Circle()
-                                    .fill(Color.gray.opacity(0.9))
-                                    .stroke(Color.white, lineWidth: 3)
-                                    .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
+                                    .fill(Color.gray.opacity(0.6))
+                                    .stroke(Color.white, lineWidth: 3) // Add a black outline
                                     .frame(width: 250, height: 250)
+                                    .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
                                 
-                                ProgressView()
+                                Image(systemName: "person.fill")
+                                    .resizable()
+                                    .scaledToFill()
+                                    .scaleEffect(0.4)
+                                    .foregroundColor(.white)
+                                    .frame(width: 250, height: 250)
+                                    .clipShape(Circle()) // Make the image circular
                             }
                         }
-                    } else{
-                        ZStack{
-                            Circle()
-                                .fill(Color.gray.opacity(0.6))
-                                .stroke(Color.white, lineWidth: 3) // Add a black outline
-                                .frame(width: 250, height: 250)
-                                .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
+                        
+                        
+                        VStack(spacing:5){
+                            Text(currentUserName)
+                                .font(.headline)
+                                .fontWeight(.bold)
+                                .foregroundStyle(.black)
                             
-                            Image(systemName: "person.fill")
-                                .resizable()
-                                .scaledToFill()
-                                .scaleEffect(0.4)
-                                .foregroundColor(.white)
-                                .frame(width: 250, height: 250)
-                                .clipShape(Circle()) // Make the image circular
+                            Text("Current user")
+                                .font(.subheadline)
+                                .fontWeight(.regular)
+                                .foregroundStyle(.black)
                         }
                     }
-                    
-                    
-                    VStack(spacing:5){
-                        Text(currentUserName)
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.black)
-                        
-                        Text("Current user")
-                            .font(.subheadline)
-                            .fontWeight(.regular)
-                            .foregroundStyle(.black)
-                    }
                 }
+                .simultaneousGesture(TapGesture().onEnded {
+                    setUID(currentUserID) // Initialize UID for Chava
+                })
             }
-            .simultaneousGesture(TapGesture().onEnded {
-                setUID(currentUserID) // Initialize UID for Chava
-            })
             
             HStack(alignment: .top, spacing: 20){
                 Spacer()
@@ -224,18 +227,44 @@ struct WelcomeView: View {
                         showAuthPopup = true
                     },
                     label:{
-                        ZStack{
-                            Circle()
-                                .fill(Color.gray.opacity(0.4))
-                                .frame(width: 50, height: 50)
-                                .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
-                            
+                        HStack(alignment:.center, spacing: 10){
                             Image(systemName: "plus")
                                 .font(.title3)
                                 .foregroundColor(.black)
-                                .frame(width: 50, height: 50)
+//                                .frame(width: 50, height: 50)
                                 .scaledToFit()
+                            
+                            if UserSession.shared.deviceLinkedUIDs.isEmpty{
+                                Text("Add account")
+                                    .font(.title3)
+                                    .foregroundColor(.black)
+                            }
                         }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 100)
+                                .fill(Color.gray.opacity(0.4))
+//                                .shadow(radius: 10)
+                                .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
+                        )
+//                        .fill(Color.gray.opacity(0.4))
+//                        .frame(height: 50)
+//                        .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
+                        
+//                        ZStack{
+//                            Circle()
+//                                .fill(Color.gray.opacity(0.4))
+//                                .frame(width: 50, height: 50)
+//                                .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
+//                            
+//                            Image(systemName: "plus")
+//                                .font(.title3)
+//                                .foregroundColor(.black)
+//                                .frame(width: 50, height: 50)
+//                                .scaledToFit()
+//                        }
+                        
+                        
                     }
                 )
                 

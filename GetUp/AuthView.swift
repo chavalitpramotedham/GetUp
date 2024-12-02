@@ -185,7 +185,7 @@ struct AuthView: View {
     private func saveUserProfile(uid: String) {
         let storageRef = Storage.storage().reference().child("userImages/\(uid).jpg")
         
-        guard let profileImage = profileImage, let imageData = profileImage.jpegData(compressionQuality: 0.8) else {
+        guard let profileImage = profileImage, let imageData = profileImage.jpegData(compressionQuality: 0.5) else {
             isLoading = false
             errorMessage = "Profile image is invalid."
             return
