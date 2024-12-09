@@ -21,9 +21,13 @@ struct TaskListView: View {
     @State private var taskInputButtonFrame: CGRect = .zero // Frame for positioning popup
     @State private var navigateToDictation: Bool = false
     
-    @State private var showPopup: Bool = false
+    @State private var showFormPopup: Bool = false
     @State private var isEditingTask: Bool = true
     @State private var editingTask: TaskObject? = nil
+    
+    @State private var showCopyPopup: Bool = false
+    @State private var copyingTask: TaskObject? = nil
+    @State private var copyTargetDates: [Date] = []
     
     @State private var newTaskName: String = ""
     @State private var newTaskDescription: String = ""
@@ -164,13 +168,12 @@ struct TaskListView: View {
                     label: { EmptyView() }
                 )
             }
-            .blur(radius: showPopup ? 3 : 0)
+            .blur(radius: showFormPopup || showCopyPopup ? 3 : 0)
         }
         
         // Task Popup Overlay
-        if showPopup {
-            
-            NewTaskPopupView(showPopup: $showPopup,
+        if showFormPopup {
+            NewTaskPopupView(showPopup: $showFormPopup,
                                              newTaskName: $newTaskName,
                                              newTaskDescription: $newTaskDescription,
                                              newTaskDate: $newTaskDate,
@@ -228,6 +231,70 @@ struct TaskListView: View {
             }
             .frame(maxWidth:.infinity, maxHeight:.infinity)
         }
+        
+        if showCopyPopup{
+            CopyTaskPopupView(showPopup:$showCopyPopup,
+                              copyTargetDates: $copyTargetDates
+            ) {
+                if copyingTask != nil && !copyTargetDates.isEmpty{
+                    let copiedTasks = createTaskCopies(for: copyTargetDates, copyingTask: copyingTask)
+                    let calendar = Calendar.current
+                    
+                    if !copiedTasks.isEmpty {
+                        for task in copiedTasks{
+                            if calendar.isDate(task.taskDate ?? Date(), inSameDayAs: Date()){
+                                taskList.append(task)
+                            }
+                            taskManager.saveTaskToDB(task)
+                        }
+                        taskManager.fetchTasks()
+                    }
+                }
+                
+                copyingTask = nil
+                copyTargetDates = []
+                
+            } onCancel: {
+                copyingTask = nil
+                copyTargetDates = []
+            }
+        }
+    }
+    
+    func createTaskCopies(for dates: [Date], copyingTask: TaskObject?) -> [TaskObject] {
+        guard let copyingTask = copyingTask else {
+            // If copyingTask is nil, return an empty array
+            return []
+        }
+        
+        let calendar = Calendar.current
+        var copiedTasks: [TaskObject] = []
+        
+        for date in dates {
+            // Preserve the time component from copyingTask.taskDate
+            let originalTime = copyingTask.taskDate ?? Date()
+            let newTaskDate = calendar.date(bySettingHour: calendar.component(.hour, from: originalTime),
+                                            minute: calendar.component(.minute, from: originalTime),
+                                            second: calendar.component(.second, from: originalTime),
+                                            of: date) ?? date
+            // Reset all participantsStatus values to false
+            let resetParticipantsStatus = copyingTask.participantsStatus.mapValues { _ in false }
+            
+            // Create a new task object with the adjusted date
+            let newTask = TaskObject(
+                name: copyingTask.name, // Same name
+                description: copyingTask.description, // Same description
+                colorIndex: copyingTask.colorIndex, // Same color index
+                taskDate: newTaskDate, // Adjusted date with preserved time
+                timerSet: copyingTask.timerSet, // Same timer setting
+                participantsStatus: resetParticipantsStatus // Same participants, reset status
+            )
+            
+            // Append to the copied tasks array
+            copiedTasks.append(newTask)
+        }
+        
+        return copiedTasks
     }
     
     private var colorPicker: some View {
@@ -286,7 +353,7 @@ struct TaskListView: View {
                 action: {
                     withAnimation {
                         showTaskInputPicker = false
-                        showPopup = true
+                        showFormPopup = true
                         isEditingTask = false
                     }
                 },
@@ -360,7 +427,14 @@ struct TaskListView: View {
         newTaskParticipantsStatus = task.participantsStatus
         editingTask = task
         isEditingTask = true
-        showPopup = true
+        showFormPopup = true
+    }
+    
+    // Function to handle editing a task
+    private func onCopy(_ task: TaskObject) {
+        copyingTask = task
+        copyTargetDates = []
+        showCopyPopup = true
     }
     
     
@@ -373,16 +447,12 @@ struct TaskListView: View {
                     ScrollView {
                         VStack(spacing: 10) {
                             ForEach(filteredList) { task in
-                                TaskCardView(taskManager: taskManager, taskObject: task, onEdit: { onEdit(task) })
+                                TaskCardView(taskManager: taskManager, taskObject: task, onEdit: { onEdit(task) }, onCopy: { onCopy(task) })
                             }
                         }
                     }
                     .frame(maxWidth:.infinity,maxHeight:.infinity)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
-                    
-//                    ForEach(filteredList) { task in
-//                        TaskCardView(taskManager: taskManager, taskObject: task, onEdit: { onEdit(task) })
-//                    }
                 } else{
                     fallbackScreen
                 }
@@ -393,16 +463,12 @@ struct TaskListView: View {
                     ScrollView {
                         VStack(spacing: 10) {
                             ForEach(leftFilteredList) { task in
-                                TaskCardView(taskManager: taskManager, taskObject: task, onEdit: { onEdit(task) })
+                                TaskCardView(taskManager: taskManager, taskObject: task, onEdit: { onEdit(task) }, onCopy: { onCopy(task) })
                             }
                         }
                     }
                     .frame(maxWidth:.infinity,maxHeight:.infinity)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
-                    
-//                    ForEach(leftFilteredList.filter { !($0.participantsStatus[currentUserID] ?? false) }) { task in
-//                        TaskCardView(taskManager: taskManager, taskObject: task, onEdit: { onEdit(task) })
-//                    }
                 } else{
                     fallbackScreen
                 }

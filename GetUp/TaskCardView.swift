@@ -8,15 +8,18 @@
 import SwiftUI
 import Foundation
 
+
 struct TaskCardView: View {
     @ObservedObject var taskManager: TaskManager
     @ObservedObject var taskObject: TaskObject
-    @State private var isExpanded = false
     @State private var isDone: Bool
+    
+    @State private var titleHeight: CGFloat = 20
     
     @State private var otherParticipantDict: [String: String] = [:]
     
     var onEdit: () -> Void // Closure to trigger the edit
+    var onCopy: () -> Void // Closure to trigger the edit
     
     var taskName: String
     var taskDescription: String
@@ -26,10 +29,11 @@ struct TaskCardView: View {
     var participantsStatus: [String:Bool]
     var creatorID: String
     
-    public init(taskManager: TaskManager, taskObject: TaskObject, onEdit: @escaping () -> Void) {
+    public init(taskManager: TaskManager, taskObject: TaskObject, onEdit: @escaping () -> Void, onCopy: @escaping () -> Void) {
         self.taskManager = taskManager
         self.taskObject = taskObject
         self.onEdit = onEdit // Initialize the onEdit property
+        self.onCopy = onCopy // Initialize the onClose property
         _isDone = State(initialValue: taskObject.participantsStatus[currentUserID] ?? false) // Initialize with the model's `isDone` value
         
         taskName = taskObject.name
@@ -44,14 +48,12 @@ struct TaskCardView: View {
     var body: some View {
         HStack (alignment: .center,spacing: 20){
             VStack(alignment: .leading,spacing:10){
-                HStack(alignment: .center,spacing: 10){
-                    
-                    ZStack{ }
-                    .frame(width: 18, height: 18)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(colorDict[taskColorIndex] ?? Color.gray)
-                    )
+                HStack(alignment: .top,spacing: 10){
+                    // Dynamic Rounded Rectangle for Task Color
+                    RoundedRectangle(cornerRadius: 100)
+                        .fill(colorDict[taskColorIndex] ?? Color.gray)
+                        .frame(maxWidth: 15,maxHeight:.infinity)
+                        .padding(.vertical,3)
                     
                     Text(taskName)
                         .font(.system(size: 18))
@@ -66,31 +68,47 @@ struct TaskCardView: View {
                                 }
                             },
                             label:{
-                                Image(systemName: "pencil")
-                                    .font(.system(size: 15))
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.gray)
+                                ZStack{
+                                    Image(systemName: "pencil")
+                                        .font(.system(size: 10))
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.black.opacity(0.75))
+                                    Circle()
+                                        .fill(Color.gray.opacity(0.1))
+                                        .frame(width: 24,height:24)
+                                }
                             }
                         )
                     }
-                }
-                
-                VStack(alignment:.leading, spacing:10){
-                    Text(taskDescription == "" ? "No description":taskDescription)
-                        .font(.system(size: 14))
-                        .fontWeight(.regular)
-                        .lineLimit(isExpanded ? nil : 1) // No limit if expanded, 1 line if collapsed
-                        .animation(.easeInOut, value: isExpanded)
                     
-                    Button(action: {
-                        isExpanded.toggle() // Toggle the expanded state
-                    }) {
-                        Text(isExpanded ? "See Less" : "See More")
-                            .font(.system(size: 14))
-                            .fontWeight(.regular)
-                            .foregroundColor(.blue)
-                    }
+                    Button (
+                        action: {
+                            withAnimation {
+                                onCopy()
+                            }
+                        },
+                        label:{
+                            ZStack{
+                                Image(systemName: "plus.square.on.square")
+                                    .font(.system(size: 10))
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.black.opacity(0.75))
+                                
+                                Circle()
+                                    .fill(Color.gray.opacity(0.1))
+                                    .frame(width: 24,height:24)
+                            }
+                            
+                        }
+                    )
                 }
+                .padding(0)
+                
+                Text(taskDescription != "" ? taskDescription : "No description")
+                    .foregroundStyle(taskDescription != "" ? .black : .gray)
+                    .font(.system(size: 14))
+                    .fontWeight(.regular)
+                    .lineLimit(1)
                 
                 HStack(alignment: .center,spacing: 20){
                     HStack(alignment: .center,spacing:10){
@@ -143,30 +161,33 @@ struct TaskCardView: View {
                         }
                         
                     }
+                    
+                    Spacer()
                 }
-                .frame(width: .infinity, height: 30)
+                .frame(height: 30)
+                .frame(maxWidth:.infinity)
+//                .frame(width: .infinity, height: 30)
             }
+            .frame(maxWidth: .infinity)
             
-            Spacer()
+//            Spacer()
             
-            HStack(alignment: .center){
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 25))
-                    .foregroundStyle(isDone ? .green : .gray.opacity(0.3))
-            }
-            .frame(maxHeight: .infinity)
-            .onTapGesture {
-                taskObject.participantsStatus[currentUserID]?.toggle() // Directly toggle taskObject's isDone
-                isDone = taskObject.participantsStatus[currentUserID] ?? false
-                
-                taskManager.updateTaskToDB(taskObject)
-                triggerHapticFeedback()
-            }
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 25))
+                .foregroundStyle(isDone ? .green : .gray.opacity(0.3))
+                .onTapGesture {
+                    taskObject.participantsStatus[currentUserID]?.toggle() // Directly toggle taskObject's isDone
+                    isDone = taskObject.participantsStatus[currentUserID] ?? false
+                    
+                    taskManager.updateTaskToDB(taskObject)
+                    triggerHapticFeedback()
+                }
         }
         .padding()
         .background(Color.white)
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+        .frame(maxWidth: .infinity)
         .onAppear {
             updateOtherParticipantDict()
         }

@@ -196,8 +196,7 @@ struct HabitListView: View {
                 }
                 .padding(.horizontal,-15)
                 .refreshable {
-                    print("Refreshing")
-                    taskManager.fetchTasks() // Fetch tasks when pulled down
+                    taskManager.refresh() // Fetch tasks when pulled down
                 }
         }
         .padding([.leading, .trailing], 30)

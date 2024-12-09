@@ -104,8 +104,7 @@ struct CalendarView: View {
                     selectToday()
                 }
                 .refreshable {
-                    print("Refreshing")
-                    taskManager.fetchTasks() // Fetch tasks when pulled down
+                    taskManager.refresh() // Fetch tasks when pulled down
                 }
                 
             }
@@ -349,9 +348,6 @@ struct CalendarView: View {
                         }
                     }
                 }
-//                .onTapGesture {
-//                    selectDate(date)
-//                }
             }
         }
         
@@ -569,8 +565,4 @@ struct DailyOrWeeklySelector: View {
         }
         .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 1)
     }
-}
-
-#Preview {
-    CalendarView(taskManager: TaskManager())
 }

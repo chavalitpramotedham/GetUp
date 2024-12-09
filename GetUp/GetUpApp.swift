@@ -288,6 +288,18 @@ class TaskManager: ObservableObject {
         fetchTasks()
     }
     
+    func refresh(){
+        print("Refreshing Task Manager")
+        
+        pastDates = getPastDays(numPastFutureDates)
+        todayDates = getToday()
+        futureDates = getFutureDays(numPastFutureDates)
+        
+        combinedDates = pastDates + todayDates + futureDates
+        
+        fetchTasks()
+    }
+    
     func fetchTasks() {
         firestoreManager.fetchTasks { [weak self] fetchedTasks, error in
             if let error = error {
@@ -442,12 +454,14 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 
 struct ContentView: View {
-    @StateObject private var taskManager: TaskManager
+    @ObservedObject var taskManager: TaskManager
     
-    init(){
-        let manager = TaskManager()
-        _taskManager = StateObject(wrappedValue: manager)
-    }
+//    @StateObject private var taskManager: TaskManager
+//    
+//    init(){
+//        let manager = TaskManager()
+//        _taskManager = StateObject(wrappedValue: manager)
+//    }
     
     var body: some View {
         NavigationStack {
@@ -492,30 +506,42 @@ struct GetUpApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @Environment(\.scenePhase) var scenePhase
     @StateObject private var appState = AppState()
+    @StateObject private var taskManager: TaskManager
+    
+//    init(){
+//        let manager = TaskManager()
+//        _taskManager = StateObject(wrappedValue: manager)
+//    }
     
     init() {
         FirebaseApp.configure()
+        let manager = TaskManager()
+        _taskManager = StateObject(wrappedValue: manager)
         configureNotificationPermissions() // Request permissions and set up notifications
-        
-        print(currentDeviceID)
     }
     
     var body: some Scene {
         WindowGroup {
             
             if appState.isInitialized {
-                ContentView()
+                ContentView(taskManager: taskManager)
                     .onChange(of: scenePhase) { newPhase in
                         if newPhase == .active {
                             // Trigger widget refresh when app enters the foreground
                             WidgetCenter.shared.reloadTimelines(ofKind: "GetUpWidget")
                             WidgetCenter.shared.reloadTimelines(ofKind: "GetUpLockScreenWidget")
                             print("Widget refreshed on app enter")
+                            
+                            
+                            taskManager.refresh()
+                            
                         } else if newPhase == .background {
                             // Trigger widget refresh when app enters the background
                             WidgetCenter.shared.reloadTimelines(ofKind: "GetUpWidget")
                             WidgetCenter.shared.reloadTimelines(ofKind: "GetUpLockScreenWidget")
                             print("Widget refreshed on app exit")
+                            
+                            taskManager.refresh()
                         }
                     }
             } else {
@@ -933,8 +959,4 @@ func fetchUserData(from uid: String) async throws -> [String: Any] {
     } catch {
         throw error // Propagate the error
     }
-}
-
-#Preview {
-    ContentView()
 }
