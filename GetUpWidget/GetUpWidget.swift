@@ -15,21 +15,6 @@ var currentDeviceID = UIDevice.current.identifierForVendor?.uuidString ?? "unkno
 var currentUserID = ""
 var currentUserImageURL: String = ""
 
-// To be stored in DB
-let userDB: [String:[String:[String]]] = [
-    "123": [
-        "userName": ["Chava"],
-        "profilePicture": ["Chava"],
-        "connections": ["456"]
-    ],
-    "456":
-    [
-        "userName": ["Cheryl"],
-        "profilePicture": ["Cheryl"],
-        "connections": ["123"]
-    ]
-]
-
 let colorDict: [Int: Color] = [
     0: Color.gray,
     1: Color.mint,
@@ -78,8 +63,9 @@ class TaskObjectForWidget: Identifiable {
         else {
             return nil // Return nil if required fields are missing
         }
+        
+        let isDone = currentUserID.isEmpty ? false : (participantsStatus[currentUserID] ?? false)
 
-        let isDone = participantsStatus[currentUserID] ?? false
         let taskDate = taskDateTimestamp.dateValue()
 
         self.init(
@@ -117,13 +103,26 @@ class FirestoreManager {
 class TaskManager: ObservableObject {
     @Published var todayTaskList: [TaskObjectForWidget]?
     private var firestoreManager = FirestoreManager()
-
+    
     init() {
-        getLastLinkedUser()
-        fetchTasks()
+        getLastLinkedUser { [weak self] userID in
+            guard let userID = userID, !userID.isEmpty else {
+                print("No user ID linked. Cannot fetch tasks.")
+                return
+            }
+
+            DispatchQueue.main.async {
+                self?.fetchTasks()
+            }
+        }
     }
 
     func fetchTasks() {
+        guard !currentUserID.isEmpty else {
+            print("User ID is not set. Cannot fetch tasks.")
+            return
+        }
+        
         firestoreManager.fetchTasks { [weak self] fetchedTasks, error in
             if let error = error {
                 print("Error fetching tasks: \(error.localizedDescription)")
@@ -279,10 +278,6 @@ struct GetUpWidgetEntryView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity) // Fill the widget's size
                 .clipped() // Ensures no overflow occurs
                 .ignoresSafeArea()
-
-            // White overlay with 75% opacity
-//            Color.white.opacity(0.75)
-//                .ignoresSafeArea()
             
             LinearGradient(
                 gradient: Gradient(colors: [Color.white.opacity(1), Color.white.opacity(0.95),
@@ -312,33 +307,6 @@ struct GetUpWidgetEntryView: View {
                 // Task List
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment:.center,spacing:10){
-//                        if currentUserImageURL != "" {
-//                            let url = URL(string: currentUserImageURL)
-//                            
-//                            AsyncImage(url: url) { image in
-//                                image
-//                                    .resizable()
-//                                    .scaledToFill()
-//                                    .scaleEffect(1.5)
-//                                    .frame(width: 25, height: 25)
-//                                    .clipShape(Circle()) // Make the image circular
-//                                    .overlay(
-//                                        Circle()
-//                                            .stroke(Color.black, lineWidth: 0.5) // Add a black outline
-//                                    )
-//                                    .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 0)
-//                            } placeholder: {
-//                                ZStack{
-//                                    Circle()
-//                                        .fill(Color.gray.opacity(0.6))
-//                                        .stroke(Color.black, lineWidth: 0.5) // Add a black outline
-//                                        .frame(width: 25, height: 25)
-//                                        .shadow(color: Color.black.opacity(0.2), radius: 1, x: 0, y: 0)
-//                                    
-////                                    ProgressView()
-//                                }
-//                            }
-//                        }
                         
                         VStack(alignment:.leading, spacing:3){
                             if entry.taskList.count == 0{
@@ -558,72 +526,35 @@ func taskCategories(_ taskList: [TaskObjectForWidget]) -> [(name: String, color:
     return categories
 }
 
-func getLastLinkedUser(){
+func getLastLinkedUser(completion: @escaping (String?) -> Void) {
     let deviceRef = Firestore.firestore().collection("deviceToUsers").document(currentDeviceID)
 
     deviceRef.getDocument { document, error in
         if let error = error {
             print("Error fetching device document: \(error.localizedDescription)")
+            completion(nil)
             return
         }
-        
+
         guard let document = document, document.exists,
               let lastLinkedUID = document.data()?["lastLinkedUID"] as? String else {
             print("Document does not exist or lastLinkedUID is missing.")
+            completion(nil)
             return
         }
         
-        print("Retrieved lastLinkedUID: \(lastLinkedUID)")
-        
         // Now fetch the user data based on this UID
         if !lastLinkedUID.isEmpty {
+            print("Retrieved lastLinkedUID: \(lastLinkedUID)")
             currentUserID = lastLinkedUID
-
-//            Task {
-//                do {
-//                    try await setUserData(lastLinkedUID) // Use the retrieved UID
-//                } catch {
-//                    print("Failed to set user data for lastLinkedUID \(lastLinkedUID): \(error.localizedDescription)")
-//                }
-//            }
+            completion(lastLinkedUID)
         } else {
             print("No lastLinkedUID found.")
+            completion(nil)
+            
         }
     }
 }
-
-//func setUserData(_ uid: String) async throws {
-//    do {
-//        let data = try await fetchUserData(from: uid)
-//
-//        // Assign values to your variables
-//        currentUserID = uid
-//        currentUserImageURL = data["userImageURL"] as? String ?? ""
-//
-//        // Optional: Print to verify
-//        print("User Data:")
-//        print("ID: \(currentUserID)")
-//        print("Image URL: \(currentUserImageURL)")
-//    } catch {
-//        print("Error fetching user data: \(error.localizedDescription)")
-//        throw error // Rethrow the error if necessary
-//    }
-//}
-
-//func fetchUserData(from uid: String) async throws -> [String: Any] {
-//    let userRef = Firestore.firestore().collection("users").document(uid)
-//
-//    do {
-//        let document = try await userRef.getDocument()
-//        if let data = document.data() {
-//            return data // Return the document data
-//        } else {
-//            throw NSError(domain: "FirestoreError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Document does not exist or has no data."])
-//        }
-//    } catch {
-//        throw error // Propagate the error
-//    }
-//}
 
 struct GetUpWidget: Widget {
     let kind: String = "GetUpWidget"
@@ -662,10 +593,3 @@ struct GetUpLockScreenWidget: Widget {
         .supportedFamilies([.accessoryInline]) // Lock Screen widget family
     }
 }
-
-//#Preview(as: .systemSmall) {
-//    GetUpWidget()
-//} timeline: {
-//    SimpleEntry(date: .now, configuration: .smiley)
-//    SimpleEntry(date: .now, configuration: .starEyes)
-//}
